@@ -20,6 +20,7 @@ export class AuthController {
       access_type: 'offline',
       scope: ['openid', 'profile', 'email', 'https://www.googleapis.com/auth/calendar'],
     });
+    
     return { authUrl };
   }
 }
