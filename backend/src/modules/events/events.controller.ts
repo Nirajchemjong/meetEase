@@ -65,7 +65,7 @@ export class EventsController {
         end_at: end_at,
         timezone: dto.timezone,
         location_link: calendarEvent.hangoutLink ?? 'https://meet.google.com',
-        status: dto.status ?? 'PENDING',
+        status: dto.status ?? 'CREATED',
         calendar_event_id: calendarEvent.id ?? '',
         contact_id: contact.id,
         description: dto.description ? dto.description : '',

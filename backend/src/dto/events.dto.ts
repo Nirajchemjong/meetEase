@@ -1,7 +1,7 @@
 import { IsInt, IsOptional, IsString, IsEmail, IsEnum, IsISO8601, IsBoolean } from 'class-validator';
 
 export enum EventStatus {
-  PENDING = 'PENDING',
+  CREATED = 'CREATED',
   CONFIRMED = 'CONFIRMED',
   COMPLETED = 'COMPLETED',
   CANCELLED = 'CANCELLED'

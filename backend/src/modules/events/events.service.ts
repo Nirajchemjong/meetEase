@@ -13,7 +13,7 @@ export class EventsService {
         end_at: new Date(dto.end_at),
         timezone: dto.timezone,
         location_link: dto.location_link ?? '',
-        status: dto.status || "PENDING",
+        status: dto.status || "CREATED",
         calendar_event_id: dto.calendar_event_id ?? '',
         event_type_id: dto.event_type_id,
         user_id: dto.user_id,

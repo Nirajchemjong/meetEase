@@ -58,7 +58,7 @@ CREATE TABLE "events" (
     "end_at" TIMESTAMP NOT NULL,
     "timezone" VARCHAR NOT NULL,
     "location_link" VARCHAR NOT NULL,
-    "status" VARCHAR NOT NULL, -- PENDING, CONFIRMED, COMPLETED, CANCELLED, RESCHEDULE
+    "status" VARCHAR NOT NULL, -- CREATED, COMPLETED, CANCELLED
     "calendar_event_id" VARCHAR,
     "created_at" TIMESTAMP DEFAULT now(),
     "updated_at" TIMESTAMP DEFAULT now()
