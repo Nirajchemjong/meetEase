@@ -65,6 +65,7 @@ model contacts {
 
   users      users    @relation(fields: [user_id], references: [id])
   events     events[]
+  @@unique([user_id, email], name: "contacts_user_id_email_unique")
 }
 
 model events {
