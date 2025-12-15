@@ -11,7 +11,7 @@ import {
 import { Link, useRouterState } from "@tanstack/react-router";
 
 const navMenu = [
-  { name: "Dasboard", to: "/dashboard", icon: <ChartBarIcon className="h-5 w-5 mr-2" /> },
+  { name: "Dashboard", to: "/dashboard", icon: <ChartBarIcon className="h-5 w-5 mr-2" /> },
   { name: "Scheduling", to: "/scheduling", icon: <LinkIcon className="h-5 w-5 mr-2" /> },
   { name: "Bookings", to: "/bookings", icon: <CalendarIcon className="h-5 w-5 mr-2" /> },
   { name: "Availability", to: "/availability", icon: <ClockIcon className="h-5 w-5 mr-2" /> },
