@@ -1,11 +1,26 @@
+import { IsInt, IsString, IsOptional } from 'class-validator';
+
 export class CreateAvailabilityDto {
-  user_id: string;
-  day_of_week: number; // 0 = Sun ... 6 = Sat
-  start_time_minutes: number;
-  end_time_minutes: number;
+  @IsOptional()
+  @IsInt()
+  user_id: number;
+
+  @IsInt()
+  day_of_week: number; // 0 = Sunday ... 6 = Saturday
+
+  @IsString()
+  start_time: string;
+
+  @IsString()
+  end_time: string;
 }
 
 export class UpdateAvailabilityDto {
-  start_time_minutes?: number;
-  end_time_minutes?: number;
+  @IsOptional()
+  @IsString()
+  start_time?: string;
+
+  @IsOptional()
+  @IsString()
+  end_time?: string;
 }

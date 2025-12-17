@@ -1,20 +1,20 @@
 import { Injectable } from '@nestjs/common';
-import { CreateEventDto, UpdateEventDto } from 'src/dto/events.dto';
+import { CreateEventDataDto, UpdateEventDto } from 'src/dto/events.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class EventsService {
   constructor(private prisma: PrismaService) {}
 
-  create(dto: CreateEventDto) {
-    return this.prisma.events.create({
+  async create(dto: CreateEventDataDto) {
+    return await this.prisma.events.create({
       data: {
         start_at: new Date(dto.start_at),
         end_at: new Date(dto.end_at),
         timezone: dto.timezone,
-        location_link: dto.location_link,
-        status: dto.status,
-        calendar_event_id: dto.calendar_event_id,
+        location_link: dto.location_link ?? '',
+        status: dto.status || "CREATED",
+        calendar_event_id: dto.calendar_event_id ?? '',
         event_type_id: dto.event_type_id,
         user_id: dto.user_id,
         contact_id: dto.contact_id,
@@ -22,9 +22,9 @@ export class EventsService {
     });
   }
 
-  findAllByUser(user_id: string) {
-    return this.prisma.events.findMany({
-      where: { user_id: user_id },
+  async findAllByUser(user_id: number) {
+    return await this.prisma.events.findMany({
+      where: { user_id },
       orderBy: { created_at: 'desc' },
       include: {
         event_types: true,
@@ -33,8 +33,19 @@ export class EventsService {
     });
   }
 
-  findOne(id: string) {
-    return this.prisma.events.findUnique({
+  async findFilteredByUser(where) {
+    return await this.prisma.events.findMany({
+      where,
+      orderBy: { created_at: 'desc' },
+      include: {
+        event_types: true,
+        contacts: true,
+      },
+    });
+  }
+
+  async findOne(id: number) {
+    return await this.prisma.events.findUnique({
       where: { id },
       include: {
         event_types: true,
@@ -44,19 +55,14 @@ export class EventsService {
     });
   }
 
-  update(id: string, dto: UpdateEventDto) {
-    return this.prisma.events.update({
+  async update(id: number, dto) {
+    return await this.prisma.events.update({
       where: { id },
-      data: {
-        ...dto,
-        start_at: dto.start_at ? new Date(dto.start_at) : undefined,
-        end_at: dto.end_at ? new Date(dto.end_at) : undefined,
-        contact_id: dto.contact_id,
-      },
+      data: dto
     });
   }
 
-  remove(id: string) {
-    return this.prisma.events.delete({ where: { id } });
+  async remove(id: number) {
+    return await this.prisma.events.delete({ where: { id } });
   }
 }

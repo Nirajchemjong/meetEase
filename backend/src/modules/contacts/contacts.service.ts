@@ -6,31 +6,40 @@ import { PrismaService } from 'src/prisma/prisma.service';
 export class ContactsService {
   constructor(private prisma: PrismaService) {}
 
-  create(dto: CreateContactDto) {
-    return this.prisma.contacts.create({
-      data: {
-        name: dto.name,
-        email: dto.email,
-        phone: dto.phone,
-        tag: dto.tag,
-        user_id: dto.user_id, // <-- FK
+  async create(data: CreateContactDto) {
+    return await this.prisma.contacts.create({data});
+  }
+
+  async upsert(data: CreateContactDto) {
+    return await this.prisma.contacts.upsert({
+      where: {
+        contacts_user_id_email_unique: {
+          user_id: data.user_id,
+          email: data.email,
+        },
       },
+      update: {
+        name: data.name,
+        phone: data.phone,
+        tag: data.tag,
+      },
+      create: data,
     });
   }
 
-  findAllByUser(user_id: string) {
-    return this.prisma.contacts.findMany({
+  async findAllByUser(user_id: number) {
+    return await this.prisma.contacts.findMany({
       where: { user_id },
       orderBy: { created_at: 'desc' },
     });
   }
 
-  findOne(id: string) {
-    return this.prisma.contacts.findUnique({ where: { id } });
+  async findOne(id: number) {
+    return await this.prisma.contacts.findUnique({ where: { id } });
   }
 
-  update(id: string, dto: UpdateContactDto) {
-    return this.prisma.contacts.update({
+  async update(id: number, dto: UpdateContactDto) {
+    return await this.prisma.contacts.update({
       where: { id },
       data: {
         ...dto
@@ -38,7 +47,7 @@ export class ContactsService {
     });
   }
 
-  remove(id: string) {
-    return this.prisma.contacts.delete({ where: { id } });
+  async remove(id: number) {
+    return await this.prisma.contacts.delete({ where: { id } });
   }
 }

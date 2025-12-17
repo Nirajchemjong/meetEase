@@ -1,12 +1,27 @@
+import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { ValidationPipe, VersioningType } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      forbidNonWhitelisted: false,
+    })
+  );
+
   app.enableCors();
+  
   app.setGlobalPrefix('api');
+    app.enableVersioning({
+    type: VersioningType.URI,
+    defaultVersion: '1',
+  })
 
   const config = new DocumentBuilder()
     .setTitle('MeetEase API')

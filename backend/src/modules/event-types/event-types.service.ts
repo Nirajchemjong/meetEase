@@ -6,32 +6,32 @@ import { PrismaService } from 'src/prisma/prisma.service';
 export class EventTypesService {
   constructor(private prisma: PrismaService) {}
 
-  create(dto: CreateEventTypeDto) {
-    return this.prisma.event_types.create({
+  async create(dto: CreateEventTypeDto) {
+    return await this.prisma.event_types.create({
       data: {
         title: dto.title,
         description: dto.description,
         duration_minutes: dto.duration_minutes,
         is_active: dto.is_active ?? true,
         client_tag: dto.client_tag,
-        user_id: dto.user_id, // FK mapped correctly
+        user_id: dto.user_id
       },
     });
   }
 
-  findAllByUser(user_id: string) {
-    return this.prisma.event_types.findMany({
+  async findAllByUser(user_id: number) {
+    return await this.prisma.event_types.findMany({
       where: { user_id },
       orderBy: { created_at: 'desc' },
     });
   }
 
-  findOne(id: string) {
-    return this.prisma.event_types.findUnique({ where: { id } });
+  async findOne(id: number) {
+    return await this.prisma.event_types.findUnique({ where: { id } });
   }
 
-  update(id: string, dto: UpdateEventTypeDto) {
-    return this.prisma.event_types.update({
+  async update(id: number, dto: UpdateEventTypeDto) {
+    return await this.prisma.event_types.update({
       where: { id },
       data: {
         ...dto
@@ -39,7 +39,7 @@ export class EventTypesService {
     });
   }
 
-  remove(id: string) {
-    return this.prisma.event_types.delete({ where: { id } });
+  async remove(id: number) {
+    return await this.prisma.event_types.delete({ where: { id } });
   }
 }

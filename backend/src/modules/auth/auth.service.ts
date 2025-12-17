@@ -1,29 +1,64 @@
 import { Injectable } from '@nestjs/common';
-import { google } from 'googleapis';
+import axios from 'axios';
+import { UsersService } from '../users/users.service';
+import { JwtService } from '@nestjs/jwt';
+import { GoogleOAuthService } from '../google-oauth/google-oauth.service';
 
 @Injectable()
 export class AuthService {
-  async getCalendarEvents(tokens: { accessToken: string; refreshToken: string }) {
-    const oauth2Client = new google.auth.OAuth2(
-      process.env.GOOGLE_CLIENT_ID,
-      process.env.GOOGLE_CLIENT_SECRET,
-      process.env.GOOGLE_REDIRECT_URI,
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly jwtService: JwtService,
+    private readonly oAuthService: GoogleOAuthService
+  ) {}
+
+  async getAuthUrl() {
+    const authUrl = await this.oAuthService.getAuthUrl();
+    return { authUrl };
+  }
+
+  async handleCallback(code: string) {
+    const { tokens } = await this.oAuthService.getTokens(code);
+
+    const accessToken = tokens.access_token || tokens.refresh_token || tokens.id_token;
+    if (!accessToken) {
+      throw new Error('Failed to get Google tokens');
+    }
+
+    const { data } = await axios.get(
+      `https://www.googleapis.com/oauth2/v3/userinfo?access_token=${accessToken}`
     );
 
-    oauth2Client.setCredentials({
-      access_token: tokens.accessToken,
-      refresh_token: tokens.refreshToken,
-    });
+    const { sub, given_name, family_name, picture, email } = data;
 
-    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+    if (!email) throw new Error('Failed to get Google user info');
 
-    const response = await calendar.events.list({
-      calendarId: 'primary',
-      maxResults: 10,
-      singleEvents: true,
-      orderBy: 'startTime',
-    });
+    let user = await this.usersService.findByEmail(email);
 
-    return response.data.items;
+    if (!user) {
+      user = await this.usersService.create({
+        google_account_id: sub,
+        name: `${given_name || ''} ${family_name || ''}`.trim(),
+        picture: picture || '',
+        email,
+        access_token: tokens.access_token || accessToken,
+        refresh_token: tokens.refresh_token || undefined,
+        token_expiry: tokens.expiry_date ? new Date(tokens.expiry_date) : undefined,
+      });
+    } else {
+      await this.usersService.update(user.id, {
+        google_account_id: sub,
+        name: `${given_name || ''} ${family_name || ''}`.trim(),
+        picture: picture || '',
+        access_token: tokens.access_token || accessToken,
+        refresh_token: tokens.refresh_token || user.refresh_token || undefined,
+        token_expiry: tokens.expiry_date ? new Date(tokens.expiry_date) : undefined
+      });
+    }
+
+    const payload = { sub: user.id, email: user.email };
+    const access_token = await this.jwtService.signAsync(payload);
+
+    return { access_token };
   }
 }
