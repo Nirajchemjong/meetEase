@@ -3,11 +3,14 @@ import axios from 'axios';
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import { GoogleOAuthService } from '../google-oauth/google-oauth.service';
+import { AvailabilitiesService } from '../availabilities/availabilities.service';
+import { timeStringToDate } from '@/helpers/time.helper';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly usersService: UsersService,
+    private readonly availabiltyService: AvailabilitiesService,
     private readonly jwtService: JwtService,
     private readonly oAuthService: GoogleOAuthService
   ) {}
@@ -45,6 +48,16 @@ export class AuthService {
         refresh_token: tokens.refresh_token || undefined,
         token_expiry: tokens.expiry_date ? new Date(tokens.expiry_date) : undefined,
       });
+      let availabilities: any = [];
+      for(let i=0; i<7; i++) {
+        availabilities.push({
+          user_id: user.id,
+          day_of_week: i,
+          start_time: timeStringToDate("09:00"),
+          end_time: timeStringToDate("17:00")
+        });
+      } 
+      await this.availabiltyService.bulkCreate(availabilities);
     } else {
       await this.usersService.update(user.id, {
         google_account_id: sub,
