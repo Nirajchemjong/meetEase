@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, ChevronDown, Globe } from "lucide-react";
+import { ChevronLeft, ChevronRight, ArrowDropDown, Language } from "@mui/icons-material";
 
 type CalendarProps = {
   selectedDate: Date | null;
@@ -101,7 +101,7 @@ const Calendar = ({ selectedDate, onSelectDate }: CalendarProps) => {
               key={i}
               disabled={disabled}
               onClick={() => onSelectDate(date)}
-              className={`mx-auto flex h-9 w-9 items-center justify-center rounded-full text-sm transition
+              className={`relative mx-auto flex h-9 w-9 items-center justify-center rounded-full text-sm transition
                 ${
                   isSelected
                     ? "bg-blue-600 text-white font-semibold shadow-sm"
@@ -109,27 +109,28 @@ const Calendar = ({ selectedDate, onSelectDate }: CalendarProps) => {
                     ? "border border-blue-600 text-blue-600 font-medium"
                     : disabled
                     ? "text-gray-300 cursor-not-allowed"
-                    : "text-gray-700 hover:bg-blue-50 hover:text-blue-600 hover:font-semibold"
+                    : "text-gray-700 hover:bg-blue-50 hover:text-blue-600 hover:font-semibold cursor-pointer"
                 }
               `}
             >
               {i + 1}
+
+              {isToday && !isSelected && (
+                <span className="absolute bottom-1 h-1 w-1 rounded-full bg-gray-400" />
+              )}
             </button>
           );
         })}
       </div>
 
       {/* Footer */}
-      <div className="mt-2 space-y-3">
-        <p className="text-xs text-gray-500">
-          Available on <span className="font-medium">Mon – Thu</span>
-        </p>
+      <div className="mt-8 space-y-3">
         <div className="relative">
-          <Globe className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-600" />
+          <Language className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-600 pr-1" />
 
           <select
             className="w-full appearance-none rounded-lg border border-gray-300 bg-white
-                      py-2 pl-9 pr-10 text-xs text-gray-900 shadow-sm
+                      cursor-pointer py-2 pl-9 pr-10 text-xs text-gray-700 shadow-sm
                       hover:border-gray-400
                       focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600"
           >
@@ -140,7 +141,7 @@ const Calendar = ({ selectedDate, onSelectDate }: CalendarProps) => {
             ))}
           </select>
 
-          <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <ArrowDropDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
         </div>
       </div>
     </div>

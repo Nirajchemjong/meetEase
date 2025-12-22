@@ -9,7 +9,7 @@ import { UsersModule } from '../users/users.module'; // ← add this
   imports: [
     PrismaModule,
     forwardRef(() => AuthModule),
-    UsersModule
+    forwardRef(() => UsersModule),
   ],
   controllers: [AvailabilitiesController],
   providers: [AvailabilitiesService],

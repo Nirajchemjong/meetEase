@@ -41,6 +41,12 @@ export class AvailabilitiesService {
     });
   }
 
+    async bulkCreate(data: CreateAvailabilityDto[]) {
+    return await this.prisma.availabilities.createMany({
+      data
+    });
+  }
+
   async findAll() {
     return await this.prisma.availabilities.findMany();
   }

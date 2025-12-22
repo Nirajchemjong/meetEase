@@ -6,6 +6,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { UsersModule } from '../users/users.module';
 import { AuthGuard } from './auth.guard';
 import { GoogleOauthModule } from '../google-oauth/google-oauth.module';
+import { AvailabilitiesModule } from '../availabilities/availabilities.module';
 
 @Module({
   imports: [
@@ -16,7 +17,8 @@ import { GoogleOauthModule } from '../google-oauth/google-oauth.module';
       signOptions: { expiresIn: '7d' },
     }),
     forwardRef(() => UsersModule),
-    GoogleOauthModule
+    GoogleOauthModule,
+    forwardRef(() => AvailabilitiesModule),
   ],
   controllers: [AuthController],
   providers: [AuthService, AuthGuard],
