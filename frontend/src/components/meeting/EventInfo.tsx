@@ -1,4 +1,7 @@
-import { ClockFading, Video } from "lucide-react";
+import {
+  AccessTime as ClockIcon,
+  Videocam as VideoIcon
+} from "@mui/icons-material";
 
 export type EventInfoProps = {
   organizer: string;
@@ -19,12 +22,12 @@ const EventInfo = ({ event }: EventInfoProps) => {
 
       <div className="mt-4 space-y-2 text-sm text-gray-600">
         <div className="flex items-center gap-2">
-          <ClockFading size={18} />
+          <ClockIcon size={18} />
           <span>{event.duration} mins</span>
         </div>
 
         <div className="flex items-center gap-2">
-          <Video size={18} />
+          <VideoIcon size={18} />
           <span>{event.location}</span>
         </div>
       </div>

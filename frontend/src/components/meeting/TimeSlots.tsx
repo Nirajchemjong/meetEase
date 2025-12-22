@@ -68,7 +68,7 @@ const TimeSlots = ({ selectedDate, onSelectTime }: Props) => {
           <button
             key={time}
             onClick={() => onSelectTime(time)} // call parent callback
-            className="w-full rounded-lg border border-gray-200 py-2 text-sm font-medium text-blue-600 transition hover:border-blue-600 hover:bg-blue-50"
+            className="w-full rounded-lg border border-gray-200 py-2 text-sm font-medium text-blue-600 transition hover:border-blue-600 hover:bg-blue-50 cursor-pointer"
           >
             {time}
           </button>

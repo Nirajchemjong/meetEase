@@ -1,5 +1,8 @@
 import { useState } from "react";
-import { ClockFading, Video } from "lucide-react";
+import {
+  AccessTime as ClockIcon,
+  Videocam as VideoIcon
+} from "@mui/icons-material";
 import type { EventInfoProps } from "../meeting/EventInfo";
 
 type Props = {
@@ -47,11 +50,11 @@ const BookingForm = ({ event, selectedDate, selectedTime, onBack }: Props) => {
 
           <div className="mt-4 space-y-2 text-sm text-gray-600">
             <div className="flex items-center gap-2">
-              <ClockFading size={16} />
+              <ClockIcon size={16} />
               <span>{event.duration} min</span>
             </div>
             <div className="flex items-center gap-2">
-              <Video size={16} />
+              <VideoIcon size={16} />
               <span>{event.description}</span>
             </div>
           </div>
