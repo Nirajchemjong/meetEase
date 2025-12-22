@@ -165,7 +165,8 @@ function ProfileRoute() {
           maxWidth: "72rem",
           mx: "auto",
           width: "100%",
-          py: { xs: 4, sm: 6 },
+          pt: { xs: 2, sm: 3 },
+          pb: { xs: 4, sm: 6 },
           px: { xs: 2, sm: 0 },
         }}
       >
@@ -282,68 +283,6 @@ function ProfileRoute() {
                 </Typography>
                 <Typography variant="body2" fontWeight={600} sx={{ wordBreak: "break-all" }}>
                   {user.google_account_id}
-                </Typography>
-              </Grid>
-            )}
-          </Grid>
-        </Box>
-
-        {/* Account Details Section */}
-        <Box
-          sx={{
-            borderRadius: 1.5,
-            bgcolor: "background.paper",
-            border: "1px solid",
-            borderColor: "divider",
-            px: 2.5,
-            py: 2.25,
-          }}
-        >
-          <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 2 }}>
-            Account details
-          </Typography>
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={6}>
-              <Typography variant="caption" color="text.secondary" sx={{ textTransform: "uppercase" }}>
-                User ID
-              </Typography>
-              <Typography variant="body2" fontWeight={600}>
-                {user.id}
-              </Typography>
-            </Grid>
-            {user.created_at && (
-              <Grid item xs={12} md={6}>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ textTransform: "uppercase" }}
-                >
-                  Member Since
-                </Typography>
-                <Typography variant="body2" fontWeight={600}>
-                  {new Date(user.created_at).toLocaleDateString("en-US", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
-                </Typography>
-              </Grid>
-            )}
-            {user.updated_at && (
-              <Grid item xs={12} md={6}>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ textTransform: "uppercase" }}
-                >
-                  Last Updated
-                </Typography>
-                <Typography variant="body2" fontWeight={600}>
-                  {new Date(user.updated_at).toLocaleDateString("en-US", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
                 </Typography>
               </Grid>
             )}

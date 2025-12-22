@@ -9,7 +9,7 @@ function ForgetPasswordRoute() {
     <main className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
       <section
         aria-labelledby="forgot-password-heading"
-        className="w-full max-w-md bg-white shadow-md rounded-lg p-6 sm:p-8"
+        className="w-full max-w-md bg-white rounded-lg p-6 sm:p-8"
       >
         <header className="mb-4 sm:mb-6">
           <h1

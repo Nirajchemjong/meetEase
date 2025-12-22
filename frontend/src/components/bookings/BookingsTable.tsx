@@ -30,7 +30,7 @@ const statusClasses: Record<string, string> = {
 
 const BookingsTable = () => {
   return (
-    <section className="rounded-lg border border-gray-200 bg-white shadow-sm overflow-hidden">
+    <section className="rounded-lg border border-gray-200 bg-white overflow-hidden">
       <div className="px-4 sm:px-6 py-3 border-b border-gray-200 flex items-center justify-between">
         <h2 className="text-sm font-semibold text-gray-900">All bookings</h2>
       </div>

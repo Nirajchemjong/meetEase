@@ -25,7 +25,7 @@ const PageHeader = ({
   return (
     <header className="mb-4 sm:mb-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-baseline sm:justify-between">
-        <div>
+        <div className="flex items-center gap-1.5">
           <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900">
             {title}
           </h1>

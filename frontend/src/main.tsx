@@ -15,6 +15,7 @@ const theme = createTheme({
     },
     background: {
       default: "#f3f4f6", // Tailwind gray-100
+      paper: "#ffffff", // White for cards, sidebar, and header
     },
   },
   shape: {

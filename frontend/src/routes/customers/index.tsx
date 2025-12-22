@@ -100,7 +100,7 @@ function CustomersRoute() {
 
   return (
     <DefaultLayout>
-      <section className="max-w-6xl mx-auto w-full py-4 sm:py-6 px-4 sm:px-0">
+      <section className="max-w-6xl mx-auto w-full pt-2 pb-4 sm:pt-3 sm:pb-6 px-4 sm:px-0">
         <PageHeader
           title="Contacts"
           subtitle="Manage people you meet with and build relationships."

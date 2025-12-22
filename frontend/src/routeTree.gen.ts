@@ -22,6 +22,7 @@ import { Route as OauthCallbackRouteImport } from './routes/oauth/callback'
 import { Route as CustomersCustomerIdRouteImport } from './routes/customers/$customerId'
 import { Route as BookingsBookingIdRouteImport } from './routes/bookings/$bookingId'
 import { Route as authForgetPasswordRouteImport } from './routes/(auth)/forget-password'
+import { Route as MeetingsUserSlugEventSlugRouteImport } from './routes/meetings/$userSlug/$eventSlug'
 
 const LogoutRoute = LogoutRouteImport.update({
   id: '/logout',
@@ -88,6 +89,12 @@ const authForgetPasswordRoute = authForgetPasswordRouteImport.update({
   path: '/forget-password',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MeetingsUserSlugEventSlugRoute =
+  MeetingsUserSlugEventSlugRouteImport.update({
+    id: '/meetings/$userSlug/$eventSlug',
+    path: '/meetings/$userSlug/$eventSlug',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/logout': typeof LogoutRoute
@@ -103,6 +110,7 @@ export interface FileRoutesByFullPath {
   '/meetings': typeof MeetingsIndexRoute
   '/profile': typeof ProfileIndexRoute
   '/scheduling': typeof SchedulingIndexRoute
+  '/meetings/$userSlug/$eventSlug': typeof MeetingsUserSlugEventSlugRoute
 }
 export interface FileRoutesByTo {
   '/logout': typeof LogoutRoute
@@ -118,6 +126,7 @@ export interface FileRoutesByTo {
   '/meetings': typeof MeetingsIndexRoute
   '/profile': typeof ProfileIndexRoute
   '/scheduling': typeof SchedulingIndexRoute
+  '/meetings/$userSlug/$eventSlug': typeof MeetingsUserSlugEventSlugRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -134,6 +143,7 @@ export interface FileRoutesById {
   '/meetings/': typeof MeetingsIndexRoute
   '/profile/': typeof ProfileIndexRoute
   '/scheduling/': typeof SchedulingIndexRoute
+  '/meetings/$userSlug/$eventSlug': typeof MeetingsUserSlugEventSlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -151,6 +161,7 @@ export interface FileRouteTypes {
     | '/meetings'
     | '/profile'
     | '/scheduling'
+    | '/meetings/$userSlug/$eventSlug'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/logout'
@@ -166,6 +177,7 @@ export interface FileRouteTypes {
     | '/meetings'
     | '/profile'
     | '/scheduling'
+    | '/meetings/$userSlug/$eventSlug'
   id:
     | '__root__'
     | '/logout'
@@ -181,6 +193,7 @@ export interface FileRouteTypes {
     | '/meetings/'
     | '/profile/'
     | '/scheduling/'
+    | '/meetings/$userSlug/$eventSlug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -197,6 +210,7 @@ export interface RootRouteChildren {
   MeetingsIndexRoute: typeof MeetingsIndexRoute
   ProfileIndexRoute: typeof ProfileIndexRoute
   SchedulingIndexRoute: typeof SchedulingIndexRoute
+  MeetingsUserSlugEventSlugRoute: typeof MeetingsUserSlugEventSlugRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -292,6 +306,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof authForgetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/meetings/$userSlug/$eventSlug': {
+      id: '/meetings/$userSlug/$eventSlug'
+      path: '/meetings/$userSlug/$eventSlug'
+      fullPath: '/meetings/$userSlug/$eventSlug'
+      preLoaderRoute: typeof MeetingsUserSlugEventSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -309,6 +330,7 @@ const rootRouteChildren: RootRouteChildren = {
   MeetingsIndexRoute: MeetingsIndexRoute,
   ProfileIndexRoute: ProfileIndexRoute,
   SchedulingIndexRoute: SchedulingIndexRoute,
+  MeetingsUserSlugEventSlugRoute: MeetingsUserSlugEventSlugRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

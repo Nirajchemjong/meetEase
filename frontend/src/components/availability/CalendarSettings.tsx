@@ -15,7 +15,7 @@ const CalendarSettings = () => {
   };
 
   return (
-    <section className="mt-4 rounded-lg border border-gray-200 bg-white shadow-sm px-4 sm:px-6 py-5 space-y-6">
+    <section className="mt-4 rounded-lg border border-gray-200 bg-white px-4 sm:px-6 py-5 space-y-6">
       <header>
         <h2 className="text-sm font-semibold text-gray-900">
           Calendar settings

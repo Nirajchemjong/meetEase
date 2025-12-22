@@ -45,7 +45,7 @@ const NewEventTypeForm = ({ onBack, onCreated }: NewEventTypeFormProps) => {
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-2xl border border-gray-200 bg-white shadow-sm"
+      className="rounded-2xl border border-gray-200 bg-white"
     >
       {/* Header */}
       <div className="flex items-start gap-3 border-b border-gray-200 px-5 py-4">

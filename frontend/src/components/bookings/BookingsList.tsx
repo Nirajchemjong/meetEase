@@ -1,44 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import BookingDetailsModal, { type Booking } from "./BookingDetailsModal";
-
-const mockBookings: Booking[] = [
-  {
-    id: 1,
-    start: "2025-12-08T14:15:00",
-    dateLabel: "Monday, 8 December 2025",
-    timeRange: "2:15 pm – 2:45 pm",
-    attendee: "niraj chemjong",
-    eventType: "Interview with Beyond",
-    hosts: 1,
-    nonHosts: 0,
-    location: "Google Meet",
-    meetingLink: "https://meet.example.com/interview-with-beyond",
-  },
-  {
-    id: 2,
-    start: "2025-12-01T09:00:00",
-    dateLabel: "Monday, 1 December 2025",
-    timeRange: "9:00 am – 9:30 am",
-    attendee: "Alex Johnson",
-    eventType: "Intro call",
-    hosts: 1,
-    nonHosts: 0,
-    location: "Zoom",
-    meetingLink: "https://zoom.example.com/intro-call",
-  },
-  {
-    id: 3,
-    start: "2025-12-15T10:00:00",
-    dateLabel: "Monday, 15 December 2025",
-    timeRange: "10:00 am – 10:30 am",
-    attendee: "Sara Lee",
-    eventType: "Product demo",
-    hosts: 1,
-    nonHosts: 1,
-    location: "Google Meet",
-    meetingLink: "https://meet.example.com/product-demo",
-  },
-];
+import {
+  getFilteredEvents,
+  type EventFilterType,
+  type GroupedEventsResponse,
+  type FilteredEvent,
+} from "../../lib/api";
 
 type TabId = "upcoming" | "past";
 
@@ -49,47 +16,99 @@ const BookingsList = () => {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [fromDate, setFromDate] = useState<string>("");
   const [toDate, setToDate] = useState<string>("");
+  const [bookingsByDate, setBookingsByDate] = useState<[string, Booking[]][]>(
+    [],
+  );
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const filtered = useMemo(() => {
-    const now = new Date();
-    const today = new Date(now);
-    today.setHours(0, 0, 0, 0);
+  // Map API event to Booking shape used in UI
+  const mapEventToBooking = (dateLabel: string, ev: FilteredEvent): Booking => {
+    const attendee =
+      ev.contact_name || ev.contact_email || "Unknown attendee";
 
-    const from = fromDate ? new Date(fromDate) : null;
-    const to = toDate ? new Date(toDate) : null;
-    if (to) {
-      to.setHours(23, 59, 59, 999);
-    }
+    // Convert "HH:MM" to 12-hour range string
+    const to12Hour = (time: string): string => {
+      const [h, m] = time.split(":").map(Number);
+      const period = h >= 12 ? "PM" : "AM";
+      const displayHours = h % 12 === 0 ? 12 : h % 12;
+      return `${displayHours.toString().padStart(2, "0")}:${m
+        .toString()
+        .padStart(2, "0")} ${period}`;
+    };
 
-    return mockBookings.filter((b) => {
-      const start = new Date(b.start);
+    const startLabel = to12Hour(ev.start_time);
+    const endLabel = to12Hour(ev.end_time);
 
-      // Upcoming vs past relative to today
-      if (activeTab === "upcoming" && start < today) {
-        return false;
+    return {
+      id: ev.id,
+      start: ev.start_at,
+      dateLabel,
+      timeRange: `${startLabel} – ${endLabel}`,
+      attendee,
+      eventType: ev.event_types || "Event",
+      hosts: 1,
+      nonHosts: 0,
+      location: ev.location_link || "Online",
+      meetingLink: ev.location_link || "",
+    };
+  };
+
+  // Load bookings from backend when tab or date range changes
+  useEffect(() => {
+    const loadBookings = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        let filter: EventFilterType = activeTab;
+        const options: { from_date?: string; to_date?: string } = {};
+
+        // If both from & to are set, use range filter
+        if (fromDate && toDate) {
+          filter = "range";
+          options.from_date = fromDate;
+          options.to_date = toDate;
+        }
+
+        const grouped: GroupedEventsResponse = await getFilteredEvents(
+          filter,
+          options,
+        );
+
+        const entries: [string, Booking[]][] = Object.entries(grouped).map(
+          ([dateKey, events]) => [
+            dateKey,
+            events.map((ev) => mapEventToBooking(dateKey, ev)),
+          ],
+        );
+
+        // Sort dates descending for upcoming, ascending for past
+        entries.sort(([a], [b]) => {
+          if (activeTab === "upcoming") {
+            return a < b ? 1 : -1;
+          }
+          return a > b ? 1 : -1;
+        });
+
+        setBookingsByDate(entries);
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Failed to load bookings";
+        setError(message);
+        setBookingsByDate([]);
+      } finally {
+        setLoading(false);
       }
-      if (activeTab === "past" && start >= today) {
-        return false;
-      }
+    };
 
-      // Date range filter (inclusive)
-      if (from && start < from) return false;
-      if (to && start > to) return false;
-
-      return true;
-    });
+    void loadBookings();
   }, [activeTab, fromDate, toDate]);
 
-  const bookingsByDate = useMemo(() => {
-    const map = new Map<string, Booking[]>();
-    for (const b of filtered) {
-      const key = b.dateLabel;
-      const list = map.get(key) ?? [];
-      list.push(b);
-      map.set(key, list);
-    }
-    return Array.from(map.entries());
-  }, [filtered]);
+  const totalEvents = useMemo(
+    () => bookingsByDate.reduce((sum, [, list]) => sum + list.length, 0),
+    [bookingsByDate],
+  );
 
   return (
     <>
@@ -112,7 +131,7 @@ const BookingsList = () => {
           </label>
         </div>
         <p className="text-xs text-gray-500">
-          Displaying {filtered.length} of {filtered.length} events
+          Displaying {totalEvents} event{totalEvents === 1 ? "" : "s"}
         </p>
       </div>
 
@@ -223,7 +242,13 @@ const BookingsList = () => {
 
       {/* Bookings list */}
       <div className="border border-t-0 border-gray-200 rounded-b-lg bg-white">
-        {bookingsByDate.length === 0 ? (
+        {loading ? (
+          <p className="px-4 sm:px-6 py-6 text-xs text-gray-500">
+            Loading bookings...
+          </p>
+        ) : error ? (
+          <p className="px-4 sm:px-6 py-6 text-xs text-red-500">{error}</p>
+        ) : bookingsByDate.length === 0 ? (
           <p className="px-4 sm:px-6 py-6 text-xs text-gray-500">
             No meetings to show.
           </p>
