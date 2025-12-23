@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, Dispatch, SetStateAction } from "react";
 import type { Customer } from "./types";
 
 type ColumnId = "name" | "email" | "phone" | "tag";
@@ -12,24 +12,24 @@ const allColumns: { id: ColumnId; label: string; always?: boolean }[] = [
 
 const STORAGE_KEY = "customersTableColumns";
 
+type FiltersType = {
+  hasPhone: boolean;
+};
+
 type CustomersListProps = {
   customers: Customer[];
+  filters: FiltersType;
+  setFilters: Dispatch<SetStateAction<FiltersType>>;
   onEdit: (customer: Customer) => void;
   onDelete: (customer: Customer) => void;
 };
 
-const CustomersList = ({ customers, onEdit, onDelete }: CustomersListProps) => {
+
+const CustomersList = ({ customers, filters, setFilters, onEdit, onDelete }: CustomersListProps) => {
   const [search, setSearch] = useState("");
   const [eventFilter, setEventFilter] = useState<string>("all");
   const [filterOpen, setFilterOpen] = useState(false);
   const [columnsOpen, setColumnsOpen] = useState(false);
-  const [timezoneSearch, setTimezoneSearch] = useState("");
-  const [filters, setFilters] = useState({
-    hasPhone: false,
-    timezones: [] as string[],
-    companies: [] as string[],
-    jobTitles: [] as string[],
-  });
   const [page, setPage] = useState(1);
   const pageSize = 10;
 
@@ -69,21 +69,6 @@ const CustomersList = ({ customers, onEdit, onDelete }: CustomersListProps) => {
     [customers],
   );
 
-  const timezones = useMemo(
-    () => Array.from(new Set(customers.map((c) => c.timezone))).sort(),
-    [customers],
-  );
-
-  const companies = useMemo(
-    () => Array.from(new Set(customers.map((c) => c.company))).sort(),
-    [customers],
-  );
-
-  const jobTitles = useMemo(
-    () => Array.from(new Set(customers.map((c) => c.jobTitle))).sort(),
-    [customers],
-  );
-
   const filtered = useMemo(() => {
     const term = search.toLowerCase().trim();
     return customers.filter((c) => {
@@ -95,22 +80,11 @@ const CustomersList = ({ customers, onEdit, onDelete }: CustomersListProps) => {
       const matchesEvent =
         eventFilter === "all" || c.eventType === eventFilter;
       const matchesPhone = !filters.hasPhone || c.phone.trim().length > 0;
-      const matchesTimezone =
-        filters.timezones.length === 0 ||
-        filters.timezones.includes(c.timezone);
-      const matchesCompany =
-        filters.companies.length === 0 ||
-        filters.companies.includes(c.company);
-      const matchesJobTitle =
-        filters.jobTitles.length === 0 ||
-        filters.jobTitles.includes(c.jobTitle);
+      
       return (
         matchesSearch &&
         matchesEvent &&
-        matchesPhone &&
-        matchesTimezone &&
-        matchesCompany &&
-        matchesJobTitle
+        matchesPhone
       );
     });
   }, [customers, search, eventFilter, filters]);
@@ -120,27 +94,10 @@ const CustomersList = ({ customers, onEdit, onDelete }: CustomersListProps) => {
   const startIndex = (currentPage - 1) * pageSize;
   const currentRows = filtered.slice(startIndex, startIndex + pageSize);
 
-  type MultiFilterKey = "timezones" | "companies" | "jobTitles";
-
-  const toggleMultiFilter = (key: MultiFilterKey, value: string) => {
-    setFilters((prev) => {
-      const list = prev[key];
-      const exists = list.includes(value);
-      return {
-        ...prev,
-        [key]: exists ? list.filter((v) => v !== value) : [...list, value],
-      };
-    });
-  };
-
   const clearAllFilters = () => {
     setFilters({
-      hasPhone: false,
-      timezones: [],
-      companies: [],
-      jobTitles: [],
+      hasPhone: false
     });
-    setTimezoneSearch("");
     setPage(1);
   };
 
@@ -206,91 +163,6 @@ const CustomersList = ({ customers, onEdit, onDelete }: CustomersListProps) => {
                       />
                       Has phone number
                     </label>
-                  </div>
-
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">
-                      Time zone
-                    </p>
-                    <div className="mt-2 mb-2">
-                      <input
-                        type="search"
-                        placeholder="Search"
-                        value={timezoneSearch}
-                        onChange={(e) => setTimezoneSearch(e.target.value)}
-                        className="w-full rounded-md border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                    <div className="space-y-1 max-h-32 overflow-y-auto text-xs text-gray-700">
-                      {timezones
-                        .filter((tz) =>
-                          tz
-                            .toLowerCase()
-                            .includes(timezoneSearch.toLowerCase().trim()),
-                        )
-                        .map((tz) => (
-                          <label
-                            key={tz}
-                            className="flex items-center gap-2 cursor-pointer"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={filters.timezones.includes(tz)}
-                              onChange={() => toggleMultiFilter("timezones", tz)}
-                              className="h-3 w-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                            />
-                            {tz}
-                          </label>
-                        ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">
-                      Company
-                    </p>
-                    <div className="mt-2 space-y-1 max-h-24 overflow-y-auto text-xs text-gray-700">
-                      {companies.map((company) => (
-                        <label
-                          key={company}
-                          className="flex items-center gap-2 cursor-pointer"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={filters.companies.includes(company)}
-                            onChange={() =>
-                              toggleMultiFilter("companies", company)
-                            }
-                            className="h-3 w-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                          />
-                          {company}
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">
-                      Job title
-                    </p>
-                    <div className="mt-2 space-y-1 max-h-24 overflow-y-auto text-xs text-gray-700">
-                      {jobTitles.map((title) => (
-                        <label
-                          key={title}
-                          className="flex items-center gap-2 cursor-pointer"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={filters.jobTitles.includes(title)}
-                            onChange={() =>
-                              toggleMultiFilter("jobTitles", title)
-                            }
-                            className="h-3 w-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                          />
-                          {title}
-                        </label>
-                      ))}
-                    </div>
                   </div>
                 </div>
                 <div className="flex items-center justify-between gap-2 border-t border-gray-200 px-4 py-3">

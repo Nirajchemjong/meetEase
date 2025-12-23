@@ -43,7 +43,8 @@ import toast from "react-hot-toast";
 // Query Keys
 export const queryKeys = {
   user: ["user"] as const,
-  contacts: (userId: number) => ["contacts", userId] as const,
+  contacts: (notNull: string | null, eventType: number | null) =>
+    ["contacts", { notNull, eventType }] as const,
   eventTypes: ["eventTypes"] as const,
   eventType: (id: number) => ["eventType", id] as const,
   availabilities: ["availabilities"] as const,
@@ -64,11 +65,10 @@ export function useUser() {
 }
 
 // Contacts Queries
-export function useContacts(userId: number) {
+export function useContacts(notNull: string | null, eventType: number | null) {
   return useQuery({
-    queryKey: queryKeys.contacts(userId),
-    queryFn: () => getContacts(userId),
-    enabled: !!userId,
+    queryKey: queryKeys.contacts(notNull, eventType),
+    queryFn: () => getContacts(notNull, eventType)
   });
 }
 

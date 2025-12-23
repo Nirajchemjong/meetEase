@@ -27,9 +27,9 @@ export class ContactsService {
     });
   }
 
-  async findAllByUser(user_id: number) {
+  async findAllByUser(user_id: number, filter: {}) {
     return await this.prisma.contacts.findMany({
-      where: { user_id },
+      where: { ...{user_id},  ...filter},
       orderBy: { created_at: 'desc' },
     });
   }

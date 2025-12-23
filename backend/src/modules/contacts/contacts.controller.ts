@@ -3,11 +3,15 @@ import { ContactsService } from './contacts.service';
 import { UpdateContactDto } from 'src/dto/contacts.dto';
 import { AuthGuard } from '../auth/auth.guard';
 import { responseFormatter } from 'src/helpers/response.helper';
+import { EventTypesService } from '../event-types/event-types.service';
 
 @UseGuards(AuthGuard)
 @Controller('contacts')
 export class ContactsController {
-  constructor(private readonly contactsService: ContactsService) {}
+  constructor(
+    private readonly contactsService: ContactsService,
+    private readonly eventTypeService: EventTypesService
+  ) {}
 
   @Post()
   async create(@Body() dto, @Request() req) {
@@ -19,9 +23,22 @@ export class ContactsController {
   }
 
   @Get()
-  async findAll(@Query('user_id') user_id: number) {
+  async findAll(@Request() req, @Query('not_null') not_null?: string, @Query('event_type') event_type?: number) {
     try {
-     return responseFormatter(await this.contactsService.findAllByUser(user_id));
+      const filter: Record<string, any> = {};
+      if(not_null)
+        not_null.split(',').forEach((field) => {
+          filter[field] = { not: null };
+        });
+
+      if(event_type) {
+        const eventType = await this.eventTypeService.findOne(event_type);
+        if(eventType) {
+          filter['tag'] = eventType.client_tag
+        }
+      }
+      
+      return responseFormatter(await this.contactsService.findAllByUser(req.user.id, filter));
     } catch (err) {
       throw responseFormatter(err, "error");
     }

@@ -160,6 +160,9 @@ export class EventsController {
           throw new BadRequestException('Invalid event type');
       }
 
+      where.status = {
+        not: "CANCELLED"
+      }
       const userEvents = await this.eventService.findFilteredByUser(where);
 
       if (!userEvents.length) {
@@ -189,6 +192,7 @@ export class EventsController {
           location_link: event.location_link,
           description: event.description,
           is_rescheduled: event.is_rescheduled,
+          event_status: event.status,
 
           event_types: event.event_types?.title,
           event_types_description: event.event_types?.description,

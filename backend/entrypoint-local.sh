@@ -79,6 +79,14 @@ run_migrations() {
 }
 
 # ----------------------------
+# Run Prisma generate
+# ----------------------------
+run_generate() {
+    echo "Running Prisma generate..."
+    npx prisma generate
+}
+
+# ----------------------------
 # Start NestJS application
 # ----------------------------
 start_nest() {
@@ -96,6 +104,7 @@ main() {
     create_schema
     grant_privileges
     run_migrations
+    run_generate
     start_nest
 }
 
