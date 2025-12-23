@@ -1,3 +1,18 @@
+import { useState } from "react";
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Typography,
+  Box,
+  Link as MuiLink,
+  Stack,
+} from "@mui/material";
+import { useCancelEvent } from "../../lib/queries";
+import RescheduleModal from "./RescheduleModal";
+
 type Booking = {
   id: number;
   /** ISO start date-time string */
@@ -16,107 +31,179 @@ type BookingDetailsModalProps = {
   booking: Booking | null;
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
 };
 
 const BookingDetailsModal = ({
   booking,
   isOpen,
   onClose,
+  onSuccess,
 }: BookingDetailsModalProps) => {
-  if (!isOpen || !booking) return null;
+  const [rescheduleOpen, setRescheduleOpen] = useState(false);
+  const cancelMutation = useCancelEvent();
+  const open = isOpen && !!booking;
 
   const handleCopyLink = async () => {
     try {
       if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(booking.meetingLink);
+        await navigator.clipboard.writeText(booking?.meetingLink ?? "");
       }
     } catch {
       // ignore for now
     }
   };
 
-  const handleCancel = () => {
-    // Placeholder for API call
-    console.log("Cancel booking", booking.id);
-    onClose();
+  const handleCancel = async () => {
+    if (!booking) return;
+    
+    try {
+      await cancelMutation.mutateAsync(booking.id);
+      onSuccess?.();
+      onClose();
+    } catch (error) {
+      // Error is handled by the mutation's onError
+    }
   };
 
   const handleReschedule = () => {
-    // Placeholder for API call
-    console.log("Reschedule booking", booking.id);
+    setRescheduleOpen(true);
+  };
+
+  const handleRescheduleSuccess = () => {
+    setRescheduleOpen(false);
+    onSuccess?.();
     onClose();
   };
 
   return (
-    <div
-      className="fixed inset-0 z-40 flex items-center justify-center bg-black/30 px-4"
-      aria-modal="true"
-      role="dialog"
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      PaperProps={{
+        sx: { borderRadius: 3, p: 0.5 },
+      }}
     >
-      <div className="max-w-lg w-full rounded-xl bg-white shadow-xl border border-gray-200">
-        <div className="px-6 pt-6 pb-4 space-y-3">
-          <h2 className="text-base font-semibold text-gray-900">Meeting details</h2>
-          <p className="text-sm font-medium text-gray-900">{booking.attendee}</p>
-          <p className="text-xs text-gray-500">
-            Event type{" "}
-            <span className="font-semibold text-gray-900">
-              {booking.eventType}
-            </span>
-          </p>
-          <p className="text-xs text-gray-500">
-            {booking.dateLabel} • {booking.timeRange}
-          </p>
-          <p className="text-xs text-gray-500">Location: {booking.location}</p>
+      {booking && (
+        <>
+          <DialogTitle sx={{ pb: 1.5 }}>
+            <Typography variant="h6" fontSize={16} fontWeight={600}>
+              Meeting details
+            </Typography>
+          </DialogTitle>
 
-          <div className="mt-3 space-y-1">
-            <p className="text-xs font-semibold text-gray-900">Meeting link</p>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-              <a
-                href={booking.meetingLink}
-                target="_blank"
-                rel="noreferrer"
-                className="text-xs text-blue-600 hover:underline break-all"
-              >
-                {booking.meetingLink}
-              </a>
-              <button
-                type="button"
-                onClick={handleCopyLink}
-                className="self-start rounded-full border border-gray-300 px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
-              >
-                Copy link
-              </button>
-            </div>
-          </div>
-        </div>
+          <DialogContent dividers sx={{ pt: 0.5 }}>
+            <Stack spacing={1.25}>
+              <Typography variant="subtitle2" fontSize={14} fontWeight={600}>
+                {booking.attendee}
+              </Typography>
 
-        <div className="mt-2 flex items-center justify-between gap-2 border-t border-gray-200 px-6 py-4">
-          <button
-            type="button"
-            className="text-xs sm:text-sm font-medium text-gray-600 hover:text-gray-800"
-            onClick={onClose}
+              <Typography variant="caption" color="text.secondary">
+                Event type{" "}
+                <Typography
+                  component="span"
+                  variant="caption"
+                  fontWeight={600}
+                  color="text.primary"
+                >
+                  {booking.eventType}
+                </Typography>
+              </Typography>
+
+              <Typography variant="caption" color="text.secondary">
+                {booking.dateLabel} • {booking.timeRange}
+              </Typography>
+
+              <Typography variant="caption" color="text.secondary">
+                Location: {booking.location}
+              </Typography>
+
+              <Box mt={1}>
+                <Typography
+                  variant="caption"
+                  fontWeight={600}
+                  color="text.primary"
+                >
+                  Meeting link
+                </Typography>
+                <Stack
+                  direction={{ xs: "column", sm: "row" }}
+                  spacing={1.5}
+                  alignItems={{ sm: "center" }}
+                  justifyContent={{ sm: "space-between" }}
+                  mt={0.5}
+                >
+                  <MuiLink
+                    href={booking.meetingLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    variant="caption"
+                    sx={{ wordBreak: "break-all" }}
+                  >
+                    {booking.meetingLink}
+                  </MuiLink>
+
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={handleCopyLink}
+                    sx={{ borderRadius: 999, textTransform: "none" }}
+                  >
+                    Copy link
+                  </Button>
+                </Stack>
+              </Box>
+            </Stack>
+          </DialogContent>
+
+          <DialogActions
+            sx={{
+              px: 3,
+              py: 2.5,
+              display: "flex",
+              justifyContent: "space-between",
+            }}
           >
-            Close
-          </button>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              className="rounded-full border border-gray-300 px-4 py-1.5 text-xs sm:text-sm font-semibold text-gray-700 hover:bg-gray-50"
-              onClick={handleCancel}
+            <Button
+              onClick={onClose}
+              size="small"
+              sx={{ textTransform: "none" }}
             >
-              Cancel
-            </button>
-            <button
-              type="button"
-              className="rounded-full bg-blue-600 px-5 py-1.5 text-xs sm:text-sm font-semibold text-white hover:bg-blue-700"
-              onClick={handleReschedule}
-            >
-              Reschedule
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+              Close
+            </Button>
+
+            <Box sx={{ display: "flex", gap: 1 }}>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={handleCancel}
+                disabled={cancelMutation.isPending}
+                sx={{ borderRadius: 999, textTransform: "none" }}
+              >
+                {cancelMutation.isPending ? "Cancelling..." : "Cancel"}
+              </Button>
+              <Button
+                variant="contained"
+                size="small"
+                onClick={handleReschedule}
+                disabled={cancelMutation.isPending}
+                sx={{ borderRadius: 999, textTransform: "none" }}
+              >
+                Reschedule
+              </Button>
+            </Box>
+          </DialogActions>
+        </>
+      )}
+      <RescheduleModal
+        booking={booking}
+        isOpen={rescheduleOpen}
+        onClose={() => setRescheduleOpen(false)}
+        onSuccess={handleRescheduleSuccess}
+      />
+    </Dialog>
   );
 };
 

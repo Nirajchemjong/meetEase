@@ -19,7 +19,7 @@ const SettingsSections = () => {
       {sections.map((section) => (
         <article
           key={section.title}
-          className="rounded-lg border border-gray-200 bg-white shadow-sm px-4 sm:px-6 py-4"
+          className="rounded-lg border border-gray-200 bg-white px-4 sm:px-6 py-4"
         >
           <h2 className="text-sm font-semibold text-gray-900">
             {section.title}

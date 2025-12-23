@@ -79,7 +79,7 @@ const WeeklyHoursCard = ({
   };
 
   return (
-    <div className="mt-4 rounded-lg border border-gray-200 bg-white shadow-sm">
+    <div className="mt-4 rounded-lg border border-gray-200 bg-white">
       {/* Card header */}
       <div className="flex flex-col gap-2 border-b border-gray-200 px-4 sm:px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div>

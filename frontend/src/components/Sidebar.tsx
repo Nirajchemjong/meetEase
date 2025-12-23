@@ -4,9 +4,8 @@ import {
   CalendarToday as CalendarIcon,
   AccessTime as ClockIcon,
   People as UserGroupIcon,
-  Person as UserIcon,
   PowerSettingsNew as PowerIcon,
-  Menu as MenuIcon,
+  Menu as MenuIcon
 } from "@mui/icons-material";
 import {
   Drawer,
@@ -26,16 +25,17 @@ import { Link, useRouterState } from "@tanstack/react-router";
 
 const DRAWER_WIDTH = 256;
 
-const navMenu = [
+const menuItems = [
   { name: "Dashboard", to: "/dashboard", icon: <DashboardIcon /> },
   { name: "Scheduling", to: "/scheduling", icon: <LinkIcon /> },
   { name: "Bookings", to: "/bookings", icon: <CalendarIcon /> },
   { name: "Availability", to: "/availability", icon: <ClockIcon /> },
   { name: "Contacts", to: "/customers", icon: <UserGroupIcon /> },
-  { name: "Profile", to: "/profile", icon: <UserIcon /> },
 ];
 
-const logoutItem = { name: "Logout", to: "/logout", icon: <PowerIcon /> };
+const generalItems = [
+  { name: "Logout", to: "/logout", icon: <PowerIcon /> },
+];
 
 export const Sidebar = ({
   open,
@@ -56,7 +56,7 @@ export const Sidebar = ({
           alignItems: "center",
           justifyContent: "space-between",
           px: 2.5,
-          py: 2.5,
+          py: 2,
           borderBottom: 1,
           borderColor: "divider",
         }}
@@ -98,14 +98,14 @@ export const Sidebar = ({
 
       <Divider />
 
-      {/* Navigation list */}
+      {/* Navigation list - MENU section */}
       <Box sx={{ flex: 1, overflow: "auto", py: 2 }}>
-        <SidebarNav />
+        <SidebarMenuNav />
       </Box>
 
-      {/* Logout at bottom */}
-      <Box sx={{ borderTop: 1, borderColor: "divider", px: 1.5, py: 1.5 }}>
-        <SidebarLogout />
+      {/* Logout section at bottom */}
+      <Box sx={{ py: 2 }}>
+        <SidebarGeneralNav />
       </Box>
     </Box>
   );
@@ -121,9 +121,10 @@ export const Sidebar = ({
         "& .MuiDrawer-paper": {
           width: DRAWER_WIDTH,
           boxSizing: "border-box",
-          borderRight: 1,
-          borderColor: "divider",
+          border: "none",
           bgcolor: "background.paper",
+          borderRadius: "0 16px 16px 0",
+          boxShadow: "none",
         },
       }}
     >
@@ -132,111 +133,120 @@ export const Sidebar = ({
   );
 };
 
-const SidebarNav = () => {
+const SidebarMenuNav = () => {
   const routerState = useRouterState();
   const pathname = routerState.location.pathname;
 
   return (
-    <List sx={{ px: 1.5 }}>
-      {navMenu.map((item) => {
-        const isActive =
-          pathname === item.to || (item.to !== "/" && pathname.startsWith(item.to));
+    <>
+      <List sx={{ px: 1.5 }}>
+        {menuItems.map((item) => {
+          const isActive =
+            pathname === item.to || (item.to !== "/" && pathname.startsWith(item.to));
 
-        return (
-          <ListItem key={item.to} disablePadding sx={{ mb: 0.5 }}>
-            <ListItemButton
-              component={Link}
-              to={item.to}
-              selected={isActive}
-              sx={{
-                borderRadius: 1.5,
-                minHeight: 40,
-                "&.Mui-selected": {
-                  bgcolor: "primary.main",
-                  color: "primary.contrastText",
-                  "&:hover": {
-                    bgcolor: "primary.dark",
-                  },
-                  "& .MuiListItemIcon-root": {
-                    color: "primary.contrastText",
-                  },
-                },
-                "&:hover": {
-                  bgcolor: "action.hover",
-                },
-              }}
-            >
-              <ListItemIcon
+          return (
+            <ListItem key={item.to} disablePadding sx={{ mb: 0.5 }}>
+              <ListItemButton
+                component={Link}
+                to={item.to}
+                selected={isActive}
                 sx={{
-                  minWidth: 40,
-                  color: isActive ? "primary.contrastText" : "text.secondary",
+                  borderRadius: 1.5,
+                  minHeight: 40,
+                  "&.Mui-selected": {
+                    bgcolor: "primary.main",
+                    color: "primary.contrastText",
+                    "&:hover": {
+                      bgcolor: "primary.dark",
+                    },
+                    "& .MuiListItemIcon-root": {
+                      color: "primary.contrastText",
+                    },
+                  },
+                  "&:hover": {
+                    bgcolor: "action.hover",
+                  },
                 }}
               >
-                {item.icon}
-              </ListItemIcon>
-              <ListItemText
-                primary={item.name}
-                primaryTypographyProps={{
-                  fontWeight: isActive ? 600 : 500,
-                  fontSize: "0.875rem",
-                }}
-              />
-            </ListItemButton>
-          </ListItem>
-        );
-      })}
-    </List>
+                <ListItemIcon
+                  sx={{
+                    minWidth: 40,
+                    color: isActive ? "primary.contrastText" : "text.secondary",
+                  }}
+                >
+                  {item.icon}
+                </ListItemIcon>
+                <ListItemText
+                  primary={item.name}
+                  primaryTypographyProps={{
+                    fontWeight: isActive ? 600 : 500,
+                    fontSize: "0.875rem",
+                  }}
+                />
+              </ListItemButton>
+            </ListItem>
+          );
+        })}
+      </List>
+    </>
   );
 };
 
-const SidebarLogout = () => {
+const SidebarGeneralNav = () => {
   const routerState = useRouterState();
   const pathname = routerState.location.pathname;
-  const isActive =
-    pathname === logoutItem.to || pathname.startsWith(logoutItem.to);
 
   return (
-    <List disablePadding>
-      <ListItem disablePadding>
-        <ListItemButton
-          component={Link}
-          to={logoutItem.to}
-          selected={isActive}
-          sx={{
-            borderRadius: 1.5,
-            minHeight: 40,
-            "&.Mui-selected": {
-              bgcolor: "primary.main",
-              color: "primary.contrastText",
-              "&:hover": {
-                bgcolor: "primary.dark",
-              },
-              "& .MuiListItemIcon-root": {
-                color: "primary.contrastText",
-              },
-            },
-            "&:hover": {
-              bgcolor: "action.hover",
-            },
-          }}
-        >
-          <ListItemIcon
-            sx={{
-              minWidth: 40,
-              color: isActive ? "primary.contrastText" : "text.secondary",
-            }}
-          >
-            {logoutItem.icon}
-          </ListItemIcon>
-          <ListItemText
-            primary={logoutItem.name}
-            primaryTypographyProps={{
-              fontWeight: isActive ? 600 : 500,
-              fontSize: "0.875rem",
-            }}
-          />
-        </ListItemButton>
-      </ListItem>
-    </List>
+    <>
+      <List sx={{ px: 1.5 }}>
+        {generalItems.map((item) => {
+          const isActive =
+            pathname === item.to || (item.to !== "/" && pathname.startsWith(item.to));
+
+          return (
+            <ListItem key={item.to} disablePadding sx={{ mb: 0.5 }}>
+              <ListItemButton
+                component={Link}
+                to={item.to}
+                selected={isActive}
+                sx={{
+                  borderRadius: 1.5,
+                  minHeight: 40,
+                  "&.Mui-selected": {
+                    bgcolor: "primary.main",
+                    color: "primary.contrastText",
+                    "&:hover": {
+                      bgcolor: "primary.dark",
+                    },
+                    "& .MuiListItemIcon-root": {
+                      color: "primary.contrastText",
+                    },
+                  },
+                  "&:hover": {
+                    bgcolor: "action.hover",
+                  },
+                }}
+              >
+                <ListItemIcon
+                  sx={{
+                    minWidth: 40,
+                    color: isActive ? "primary.contrastText" : "text.secondary",
+                  }}
+                >
+                  {item.icon}
+                </ListItemIcon>
+                <ListItemText
+                  primary={item.name}
+                  primaryTypographyProps={{
+                    fontWeight: isActive ? 600 : 500,
+                    fontSize: "0.875rem",
+                  }}
+                />
+              </ListItemButton>
+            </ListItem>
+          );
+        })}
+      </List>
+    </>
   );
 };

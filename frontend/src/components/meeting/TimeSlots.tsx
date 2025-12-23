@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getEventAvailabilities } from "../../lib/api";
 
 const SLOTS_BY_DAY: Record<number, string[]> = {
   1: [ // Monday
@@ -31,9 +32,73 @@ const SLOTS_BY_DAY: Record<number, string[]> = {
 type Props = {
   selectedDate: Date | null;
   onSelectTime: (time: string) => void; // callback to parent
+  eventTypeId?: number | null;
 };
 
-const TimeSlots = ({ selectedDate, onSelectTime }: Props) => {
+const TimeSlots = ({ selectedDate, onSelectTime, eventTypeId }: Props) => {
+  const [slots, setSlots] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadAvailabilities = async () => {
+      if (!selectedDate || !eventTypeId) {
+        // Fallback to static slots if no eventTypeId
+        if (selectedDate) {
+          const day = selectedDate.getDay();
+          setSlots(SLOTS_BY_DAY[day] || []);
+        } else {
+          setSlots([]);
+        }
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+        // Format date as YYYY-MM-DD using local date components (not UTC)
+        // This prevents timezone conversion from shifting the date
+        const year = selectedDate.getFullYear();
+        const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+        const day = String(selectedDate.getDate()).padStart(2, '0');
+        const dateStr = `${year}-${month}-${day}`;
+        const availableSlots = await getEventAvailabilities(eventTypeId, dateStr);
+        
+        // Ensure availableSlots is an array
+        if (!Array.isArray(availableSlots)) {
+          setSlots([]);
+          return;
+        }
+        
+        // Convert time slots to readable format (assuming API returns time strings)
+        // The API returns time in format like "09:00" or similar
+        const formattedSlots = availableSlots.map((slot: string) => {
+          // Convert 24-hour format to 12-hour format with AM/PM
+          if (typeof slot === "string" && slot.includes(":")) {
+            const [hours, minutes] = slot.split(":").map(Number);
+            const period = hours >= 12 ? "PM" : "AM";
+            const displayHours = hours > 12 ? hours - 12 : hours === 0 ? 12 : hours;
+            return `${displayHours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")} ${period}`;
+          }
+          return slot;
+        });
+        
+        setSlots(formattedSlots);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load availabilities");
+        // Fallback to static slots on error
+        if (selectedDate) {
+          const day = selectedDate.getDay();
+          setSlots(SLOTS_BY_DAY[day] || []);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void loadAvailabilities();
+  }, [selectedDate, eventTypeId]);
+
   if (!selectedDate) {
     return (
       <div className="h-full flex items-center justify-center text-sm text-gray-500">
@@ -42,8 +107,21 @@ const TimeSlots = ({ selectedDate, onSelectTime }: Props) => {
     );
   }
 
-  const day = selectedDate.getDay();
-  const slots = SLOTS_BY_DAY[day];
+  if (loading) {
+    return (
+      <div className="h-full flex items-center justify-center text-sm text-gray-500">
+        Loading available times...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="h-full flex items-center justify-center text-sm text-red-500">
+        {error}
+      </div>
+    );
+  }
 
   if (!slots || slots.length === 0) {
     return (

@@ -4,10 +4,12 @@ import { ChevronLeft, ChevronRight, ArrowDropDown, Language } from "@mui/icons-m
 type CalendarProps = {
   selectedDate: Date | null;
   onSelectDate: (date: Date) => void;
+  availableDays?: number[]; // Array of day_of_week (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
+  timezone?: string;
+  onTimezoneChange?: (timezone: string) => void;
 };
 
 const WEEK_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const AVAILABLE_WEEK_DAYS = [1, 2, 3, 4]; // Mon–Thu
 
 const TIMEZONES = [
   { value: "Asia/Kathmandu", label: "Nepal Time (GMT+05:45)" },
@@ -21,7 +23,7 @@ const TIMEZONES = [
   { value: "Antarctica/Macquarie", label: "Macquarie Island (GMT+10 / GMT+11)" },
 ];
 
-const Calendar = ({ selectedDate, onSelectDate }: CalendarProps) => {
+const Calendar = ({ selectedDate, onSelectDate, availableDays, timezone = "Asia/Kathmandu", onTimezoneChange }: CalendarProps) => {
   const [currentMonth, setCurrentMonth] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -44,8 +46,14 @@ const Calendar = ({ selectedDate, onSelectDate }: CalendarProps) => {
     a.getMonth() === b.getMonth() &&
     a.getDate() === b.getDate();
 
-  const isAvailableDay = (date: Date) =>
-    AVAILABLE_WEEK_DAYS.includes(date.getDay());
+  const isAvailableDay = (date: Date) => {
+    // If availableDays prop is provided, use it; otherwise allow all days
+    if (availableDays && availableDays.length > 0) {
+      return availableDays.includes(date.getDay());
+    }
+    // Default: allow all days if no availability data is provided
+    return true;
+  };
 
   return (
     <div className="h-full border-r border-gray-200 p-6 flex flex-col">
@@ -104,7 +112,7 @@ const Calendar = ({ selectedDate, onSelectDate }: CalendarProps) => {
               className={`relative mx-auto flex h-9 w-9 items-center justify-center rounded-full text-sm transition
                 ${
                   isSelected
-                    ? "bg-blue-600 text-white font-semibold shadow-sm"
+                    ? "bg-blue-600 text-white font-semibold"
                     : isToday && isAvailable
                     ? "border border-blue-600 text-blue-600 font-medium"
                     : disabled
@@ -129,8 +137,10 @@ const Calendar = ({ selectedDate, onSelectDate }: CalendarProps) => {
           <Language className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-600 pr-1" />
 
           <select
+            value={timezone}
+            onChange={(e) => onTimezoneChange?.(e.target.value)}
             className="w-full appearance-none rounded-lg border border-gray-300 bg-white
-                      cursor-pointer py-2 pl-9 pr-10 text-xs text-gray-700 shadow-sm
+                      cursor-pointer py-2 pl-9 pr-10 text-xs text-gray-700
                       hover:border-gray-400
                       focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600"
           >

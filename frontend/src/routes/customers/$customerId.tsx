@@ -10,7 +10,7 @@ function CustomerDetailRoute() {
   // In a real app, fetch customer detail by ID here
   return (
     <main className="min-h-screen bg-gray-100 px-4 py-6">
-      <section className="max-w-3xl mx-auto bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <section className="max-w-3xl mx-auto bg-white rounded-lg border border-gray-200 p-6">
         <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-2">
           Customer {customerId}
         </h1>
