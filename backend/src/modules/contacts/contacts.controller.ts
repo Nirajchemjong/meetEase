@@ -19,9 +19,15 @@ export class ContactsController {
   }
 
   @Get()
-  async findAll(@Query('user_id') user_id: number) {
+  async findAll(@Request() req, @Query('not_null') not_null?: string) {
     try {
-     return responseFormatter(await this.contactsService.findAllByUser(user_id));
+      const filter: Record<string, any> = {};
+      if(not_null)
+        not_null.split(',').forEach((field) => {
+          filter[field] = { not: null };
+        });
+      
+      return responseFormatter(await this.contactsService.findAllByUser(req.user.id, filter));
     } catch (err) {
       throw responseFormatter(err, "error");
     }

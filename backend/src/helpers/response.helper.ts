@@ -1,14 +1,22 @@
-import { NotFoundException, InternalServerErrorException } from '@nestjs/common';
+import { NotFoundException, InternalServerErrorException, HttpException } from '@nestjs/common';
 
 export function notFoundResponse(message: string) {
     return new NotFoundException(message);
 }
 
-export function responseFormatter(data, level = "info") {
-    if(level == "error") {
-        console.log("error ", data);
-        return new InternalServerErrorException(data.message || data);;
-        // return new InternalServerErrorException('Something went wrong');;
+export function responseFormatter(data, level = 'info') {
+  if (level === 'error') {
+
+    // ✅ If already an HTTP exception, rethrow it
+    if (data instanceof HttpException) {
+      throw data;
     }
-    return { data };
+
+    // Otherwise, treat as real server error
+    throw new InternalServerErrorException(
+      data?.message || 'Something went wrong',
+    );
+  }
+
+  return { data };
 }
