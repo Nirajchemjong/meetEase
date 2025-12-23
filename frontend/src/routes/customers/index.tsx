@@ -45,18 +45,26 @@ function mapContactToCustomer(contact: Contact): Customer {
 }
 
 function CustomersRoute() {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [dialogMode, setDialogMode] = useState<"add" | "edit">("add");
+  const [pendingDelete, setPendingDelete] = useState<Customer | null>(null);
+  const [filters, setFilters] = useState({
+    hasPhone: false,
+    timezones: [] as string[],
+    companies: [] as string[],
+    jobTitles: [] as string[],
+  });
+
   const { data: user } = useUser();
   const { data: contacts = [], isLoading: loading, error: queryError } = useContacts(
-    user?.id ?? 0
+    filters.hasPhone ? null : null,
+    null
   );
   const createContactMutation = useCreateContact();
   const updateContactMutation = useUpdateContact();
   const deleteContactMutation = useDeleteContact();
 
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
-  const [dialogMode, setDialogMode] = useState<"add" | "edit">("add");
-  const [pendingDelete, setPendingDelete] = useState<Customer | null>(null);
 
   const customers = contacts.map(mapContactToCustomer);
   const error = queryError instanceof Error ? queryError.message : null;
@@ -174,6 +182,8 @@ function CustomersRoute() {
         ) : (
           <CustomersList
             customers={customers}
+            filters={filters}
+            setFilters={setFilters}
             onEdit={(customer) => {
               setDialogMode("edit");
               setEditingCustomer(customer);

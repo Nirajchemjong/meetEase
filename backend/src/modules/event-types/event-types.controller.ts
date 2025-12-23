@@ -52,9 +52,12 @@ export class EventTypesController {
     try {
       const eventType = await this.eventTypeService.findOne(id);
       const givenDate = new Date(date);
+
+      if(date < (new Date).toISOString().split('T')[0]) {
+        return responseFormatter([]);
+      }
       const day = givenDate.getDay();
       const userAvailabilities = await this.availabilitiesService.findByUser({ user_id: req.user.id, day_of_week: day });
-      console.log(userAvailabilities);
       
       if(userAvailabilities.length == 0) {
         return responseFormatter({});
@@ -75,7 +78,12 @@ export class EventTypesController {
       })
 
       for (let currentTime = startTime.getTime(); currentTime < endTime.getTime(); currentTime += intervalMs) {
-        allSlots.push(currentTime);
+        // if(date == (new Date).toISOString().split('T')[0]) {
+        //   // console.log(currentTime);
+        //   if(currentTime > (new Date).getTime())  allSlots.push(currentTime);
+        // } else {
+          allSlots.push(currentTime);
+        // }
       }
       const filteredSlots = allSlots.filter(time => {
         return !eventTimes.some(event => time >= event.start && time < event.end);

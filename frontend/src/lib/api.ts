@@ -156,8 +156,19 @@ export async function createContact(payload: CreateContactData): Promise<Contact
   return data.data;
 }
 
-export async function getContacts(userId: number): Promise<Contact[]> {
-  const response = await fetchWithAuth(`${API_BASE_URL}/contacts?user_id=${userId}`);
+export async function getContacts(notNull: string | null, eventType: number | null): Promise<Contact[]> {
+  let url = `${API_BASE_URL}/contacts?`;
+  const params: string[] = [];
+
+  if (notNull)
+    params.push(`not_null=${encodeURIComponent(notNull)}`);
+
+  if (eventType)
+    params.push(`event_type=${encodeURIComponent(eventType)}`);
+
+  url += params.join("&");
+
+  const response = await fetchWithAuth(url);
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
