@@ -14,7 +14,7 @@ const DashboardOverview = () => {
       {cards.map((card) => (
         <article
           key={card.label}
-          className="rounded-lg border border-gray-200 bg-white shadow-sm px-4 py-3"
+          className="rounded-lg border border-gray-200 bg-white px-4 py-3"
         >
           <p className="text-xs text-gray-500">{card.label}</p>
           <p className="mt-1 text-2xl font-semibold text-gray-900">

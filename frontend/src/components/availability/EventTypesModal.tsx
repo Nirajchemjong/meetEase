@@ -37,7 +37,7 @@ const EventTypesModal = ({
       aria-modal="true"
       role="dialog"
     >
-      <div className="max-w-md w-full rounded-xl bg-white shadow-xl border border-gray-200">
+      <div className="max-w-md w-full rounded-xl bg-white border border-gray-200">
         <div className="px-6 pt-6 pb-4 space-y-4">
           <div>
             <input

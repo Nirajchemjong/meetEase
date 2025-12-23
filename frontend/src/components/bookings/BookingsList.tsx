@@ -1,118 +1,115 @@
 import { useMemo, useState } from "react";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import { useQueryClient } from "@tanstack/react-query";
 import BookingDetailsModal, { type Booking } from "./BookingDetailsModal";
-
-const mockBookings: Booking[] = [
-  {
-    id: 1,
-    start: "2025-12-08T14:15:00",
-    dateLabel: "Monday, 8 December 2025",
-    timeRange: "2:15 pm – 2:45 pm",
-    attendee: "niraj chemjong",
-    eventType: "Interview with Beyond",
-    hosts: 1,
-    nonHosts: 0,
-    location: "Google Meet",
-    meetingLink: "https://meet.example.com/interview-with-beyond",
-  },
-  {
-    id: 2,
-    start: "2025-12-01T09:00:00",
-    dateLabel: "Monday, 1 December 2025",
-    timeRange: "9:00 am – 9:30 am",
-    attendee: "Alex Johnson",
-    eventType: "Intro call",
-    hosts: 1,
-    nonHosts: 0,
-    location: "Zoom",
-    meetingLink: "https://zoom.example.com/intro-call",
-  },
-  {
-    id: 3,
-    start: "2025-12-15T10:00:00",
-    dateLabel: "Monday, 15 December 2025",
-    timeRange: "10:00 am – 10:30 am",
-    attendee: "Sara Lee",
-    eventType: "Product demo",
-    hosts: 1,
-    nonHosts: 1,
-    location: "Google Meet",
-    meetingLink: "https://meet.example.com/product-demo",
-  },
-];
+import { useFilteredEvents } from "../../lib/queries";
+import type { FilteredEvent } from "../../lib/api";
 
 type TabId = "upcoming" | "past";
 
 const BookingsList = () => {
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<TabId>("upcoming");
   const [dateRangeOpen, setDateRangeOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
-  const [fromDate, setFromDate] = useState<string>("");
-  const [toDate, setToDate] = useState<string>("");
+  
 
-  const filtered = useMemo(() => {
-    const now = new Date();
-    const today = new Date(now);
-    today.setHours(0, 0, 0, 0);
+  const [fromDate, setFromDate] = useState<Date | null>(null);
+  const [toDate, setToDate] = useState<Date | null>(null);
+  
+  // Applied date range (used for API query)
+  const [appliedFromDate, setAppliedFromDate] = useState<Date | null>(null);
+  const [appliedToDate, setAppliedToDate] = useState<Date | null>(null);
 
-    const from = fromDate ? new Date(fromDate) : null;
-    const to = toDate ? new Date(toDate) : null;
-    if (to) {
-      to.setHours(23, 59, 59, 999);
-    }
+  // Format dates for API (YYYY-MM-DD)
+  const formatDateForAPI = (date: Date | null): string => {
+    if (!date) return "";
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
 
-    return mockBookings.filter((b) => {
-      const start = new Date(b.start);
+  // Determine filter and params based on APPLIED dates
+  const fromDateStr = formatDateForAPI(appliedFromDate);
+  const toDateStr = formatDateForAPI(appliedToDate);
+  const filter = fromDateStr && toDateStr ? "range" : activeTab;
+  const params = fromDateStr && toDateStr ? { from_date: fromDateStr, to_date: toDateStr } : undefined;
 
-      // Upcoming vs past relative to today
-      if (activeTab === "upcoming" && start < today) {
-        return false;
-      }
-      if (activeTab === "past" && start >= today) {
-        return false;
-      }
+  const {
+    data: grouped = {},
+    isLoading: loading,
+    error: queryError,
+  } = useFilteredEvents(filter, params);
 
-      // Date range filter (inclusive)
-      if (from && start < from) return false;
-      if (to && start > to) return false;
+  const error = queryError instanceof Error ? queryError.message : null;
 
-      return true;
-    });
-  }, [activeTab, fromDate, toDate]);
+  // Map API event to Booking shape used in UI
+  const mapEventToBooking = (dateLabel: string, ev: FilteredEvent): Booking => {
+    const attendee =
+      ev.contact_name || ev.contact_email || "Unknown attendee";
 
+    // Convert "HH:MM" to 12-hour range string
+    const to12Hour = (time: string): string => {
+      const [h, m] = time.split(":").map(Number);
+      const period = h >= 12 ? "PM" : "AM";
+      const displayHours = h % 12 === 0 ? 12 : h % 12;
+      return `${displayHours.toString().padStart(2, "0")}:${m
+        .toString()
+        .padStart(2, "0")} ${period}`;
+    };
+
+    const startLabel = to12Hour(ev.start_time);
+    const endLabel = to12Hour(ev.end_time);
+
+    return {
+      id: ev.id,
+      start: ev.start_at,
+      dateLabel,
+      timeRange: `${startLabel} – ${endLabel}`,
+      attendee,
+      eventType: ev.event_types || "Event",
+      hosts: 1,
+      nonHosts: 0,
+      location: ev.location_link || "Online",
+      meetingLink: ev.location_link || "",
+    };
+  };
+
+  // Map grouped events to bookings
   const bookingsByDate = useMemo(() => {
-    const map = new Map<string, Booking[]>();
-    for (const b of filtered) {
-      const key = b.dateLabel;
-      const list = map.get(key) ?? [];
-      list.push(b);
-      map.set(key, list);
-    }
-    return Array.from(map.entries());
-  }, [filtered]);
+    const entries: [string, Booking[]][] = Object.entries(grouped).map(
+      ([dateKey, events]) => [
+        dateKey,
+        (events as FilteredEvent[]).map((ev: FilteredEvent) => mapEventToBooking(dateKey, ev)),
+      ],
+    );
+
+    // Sort dates descending for upcoming, ascending for past
+    entries.sort(([a], [b]) => {
+      if (activeTab === "upcoming") {
+        return a < b ? 1 : -1;
+      }
+      return a > b ? 1 : -1;
+    });
+
+    return entries;
+  }, [grouped, activeTab]);
+
+  const totalEvents = useMemo(
+    () => bookingsByDate.reduce((sum, [, list]) => sum + list.length, 0),
+    [bookingsByDate],
+  );
 
   return (
     <>
-      {/* Top controls: calendar select, toggle, count */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            className="inline-flex items-center rounded-lg border border-gray-300 px-3 py-1.5 text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-50"
-          >
-             MeetEase
-            <span className="ml-1 text-[10px]">▼</span>
-          </button>
-          <label className="flex items-center gap-2 text-xs text-gray-600">
-            <span>Show buffers</span>
-            <input
-              type="checkbox"
-              className="h-4 w-7 appearance-none rounded-full bg-gray-200 outline-none cursor-pointer checked:bg-blue-600 relative"
-            />
-          </label>
-        </div>
+      {/* Top controls: count */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end mb-4">
         <p className="text-xs text-gray-500">
-          Displaying {filtered.length} of {filtered.length} events
+          Displaying {totalEvents} event{totalEvents === 1 ? "" : "s"}
         </p>
       </div>
 
@@ -142,7 +139,14 @@ const BookingsList = () => {
             <button
               type="button"
               className="text-sm text-gray-500 -mt-2 hover:text-gray-800 flex items-center gap-1"
-              onClick={() => setDateRangeOpen((v) => !v)}
+              onClick={() => {
+                if (!dateRangeOpen && appliedFromDate && appliedToDate) {
+                  // Pre-fill with applied dates when opening
+                  setFromDate(appliedFromDate);
+                  setToDate(appliedToDate);
+                }
+                setDateRangeOpen((v) => !v);
+              }}
             >
               Date range
               <span className="text-[10px]">
@@ -151,7 +155,7 @@ const BookingsList = () => {
             </button>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 pb-3">
             <button
               type="button"
               className="rounded-full border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
@@ -171,48 +175,122 @@ const BookingsList = () => {
 
         {/* Date range panel */}
         {dateRangeOpen && (
-          <div className="px-4 sm:px-6 pb-3 text-xs text-gray-700 space-y-2">
-            <p className="font-medium">Date range</p>
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-              <label className="flex items-center gap-2">
-                <span className="w-12 text-gray-500">From</span>
-                <input
-                  type="date"
-                  value={fromDate}
-                  onChange={(e) => setFromDate(e.target.value)}
-                  className="rounded-md border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </label>
-              <label className="flex items-center gap-2">
-                <span className="w-12 text-gray-500">To</span>
-                <input
-                  type="date"
-                  value={toDate}
-                  onChange={(e) => setToDate(e.target.value)}
-                  className="rounded-md border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </label>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  className="rounded-full border border-gray-300 px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
-                  onClick={() => {
-                    setFromDate("");
-                    setToDate("");
-                  }}
-                >
-                  Clear
-                </button>
-                <button
-                  type="button"
-                  className="rounded-full bg-blue-600 px-4 py-1 text-xs font-semibold text-white hover:bg-blue-700"
-                  onClick={() => setDateRangeOpen(false)}
-                >
-                  Apply
-                </button>
+          <LocalizationProvider dateAdapter={AdapterDateFns}>
+            <div className="px-4 sm:px-6 py-4 bg-gray-50 border-t border-gray-200">
+              <div className="space-y-3">
+                <p className="text-sm font-semibold text-gray-900">Date range</p>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                  {/* From Date */}
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium text-gray-700 min-w-[50px]">
+                      From
+                    </label>
+                    <DatePicker
+                      value={fromDate}
+                      onChange={(newValue: Date | null) => setFromDate(newValue)}
+                      slotProps={{
+                        textField: {
+                          size: "small",
+                          sx: {
+                            "& .MuiOutlinedInput-root": {
+                              borderRadius: "8px",
+                              fontSize: "0.875rem",
+                              maxWidth: "200px",
+                            },
+                          },
+                        },
+                      }}
+                    />
+                  </div>
+
+                  {/* To Date */}
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium text-gray-700 min-w-[50px]">
+                      To
+                    </label>
+                    <DatePicker
+                      value={toDate}
+                      onChange={(newValue: Date | null) => setToDate(newValue)}
+                      minDate={fromDate || undefined}
+                      slotProps={{
+                        textField: {
+                          size: "small",
+                          sx: {
+                            "& .MuiOutlinedInput-root": {
+                              borderRadius: "8px",
+                              fontSize: "0.875rem",
+                              maxWidth: "200px",
+                            },
+                          },
+                        },
+                      }}
+                    />
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex items-center gap-2 sm:ml-auto">
+                    <button
+                      type="button"
+                      className="rounded-full border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={() => {
+                        setFromDate(null);
+                        setToDate(null);
+                        setAppliedFromDate(null);
+                        setAppliedToDate(null);
+                        setDateRangeOpen(false);
+                      }}
+                    >
+                      Clear
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded-full border border-blue-600 bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 hover:border-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={() => {
+                        if (fromDate && toDate) {
+                          setAppliedFromDate(fromDate);
+                          setAppliedToDate(toDate);
+                          // Keep panel open after applying
+                        }
+                      }}
+                      disabled={!fromDate || !toDate}
+                    >
+                      Apply
+                    </button>
+                  </div>
+                </div>
+                {(fromDate || toDate) && (
+                  <div className="text-xs text-gray-500 pt-1">
+                    {fromDate && toDate
+                      ? `Ready to show events from ${fromDate.toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })} to ${toDate.toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })} - Click Apply to filter`
+                      : fromDate
+                      ? "Please select an end date"
+                      : "Please select a start date"}
+                  </div>
+                )}
+                {appliedFromDate && appliedToDate && (
+                  <div className="text-xs text-blue-600 pt-1 font-medium">
+                    Showing events from {appliedFromDate.toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })} to {appliedToDate.toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                  </div>
+                )}
               </div>
             </div>
-          </div>
+          </LocalizationProvider>
         )}
         {filterOpen && (
           <div className="px-4 sm:px-6 pb-3 text-xs text-gray-500">
@@ -223,7 +301,13 @@ const BookingsList = () => {
 
       {/* Bookings list */}
       <div className="border border-t-0 border-gray-200 rounded-b-lg bg-white">
-        {bookingsByDate.length === 0 ? (
+        {loading ? (
+          <p className="px-4 sm:px-6 py-6 text-xs text-gray-500">
+            Loading bookings...
+          </p>
+        ) : error ? (
+          <p className="px-4 sm:px-6 py-6 text-xs text-red-500">{error}</p>
+        ) : bookingsByDate.length === 0 ? (
           <p className="px-4 sm:px-6 py-6 text-xs text-gray-500">
             No meetings to show.
           </p>
@@ -289,6 +373,10 @@ const BookingsList = () => {
         booking={selectedBooking}
         isOpen={!!selectedBooking}
         onClose={() => setSelectedBooking(null)}
+        onSuccess={() => {
+          // Invalidate all event filters to refresh the list
+          queryClient.invalidateQueries({ queryKey: ["events"] });
+        }}
       />
     </>
   );

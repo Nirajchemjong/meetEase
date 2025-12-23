@@ -145,7 +145,7 @@ const CustomersList = ({ customers, onEdit, onDelete }: CustomersListProps) => {
   };
 
   return (
-    <section className="rounded-lg border border-gray-200 bg-white shadow-sm">
+    <section className="rounded-lg border border-gray-200 bg-white">
       <div className="flex flex-col gap-3 px-4 sm:px-6 py-3 border-b border-gray-200 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-sm font-semibold text-gray-900">Customers</h2>
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
@@ -186,7 +186,7 @@ const CustomersList = ({ customers, onEdit, onDelete }: CustomersListProps) => {
               </span>
             </button>
             {filterOpen && (
-              <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-xl border border-gray-200 bg-white shadow-xl z-20">
+              <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-xl border border-gray-200 bg-white z-20">
                 <div className="max-h-80 overflow-y-auto px-4 pt-4 pb-3 space-y-5">
                   <div>
                     <p className="text-sm font-semibold text-gray-900">
@@ -335,7 +335,7 @@ const CustomersList = ({ customers, onEdit, onDelete }: CustomersListProps) => {
               </span>
             </button>
             {columnsOpen && (
-              <div className="absolute right-0 mt-2 w-64 rounded-xl border border-gray-200 bg-white shadow-xl z-20">
+              <div className="absolute right-0 mt-2 w-64 rounded-xl border border-gray-200 bg-white z-20">
                 <div className="px-4 pt-4 pb-2 space-y-2">
                   <p className="text-xs font-semibold text-gray-900">
                     Columns
