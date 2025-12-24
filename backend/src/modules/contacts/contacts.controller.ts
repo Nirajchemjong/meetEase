@@ -23,7 +23,7 @@ export class ContactsController {
   }
 
   @Get()
-  async findAll(@Request() req, @Query('not_null') not_null?: string, @Query('event_type') event_type?: number, @Query('name') name?: string, @Query('email') email?: string, @Query('tag') tag?: string) {
+  async findAll(@Request() req, @Query('not_null') not_null?: string, @Query('event_type') event_type?: number) {
     try {
       const filter: Record<string, any> = {};
       if(not_null)
@@ -37,21 +37,31 @@ export class ContactsController {
           filter['tag'] = eventType.client_tag
         }
       }
+      return responseFormatter(await this.contactsService.findAllByUser(req.user.id, filter));
+    } catch (err) {
+      throw responseFormatter(err, "error");
+    }
+  }
 
-      if(name)
-        filter['name'] = {
-          contains: name,
-          mode: 'insensitive'
-        }
-
-      if(email)
-        filter['email'] = {
-          contains: email,
-          mode: 'insensitive'
-        }
-
-      if(tag)
-        filter['tag'] = tag
+  @Get("search/:search")
+  async findSearch(@Request() req, @Param('search') search: string) {
+    try {
+      const filter: Record<string, any> = {
+        OR: [
+          {
+            name : {
+              contains: search,
+              mode: 'insensitive'
+            }
+          },
+          {
+            email : {
+              contains: search,
+              mode: 'insensitive'
+            }
+          }
+        ]
+      };
       
       return responseFormatter(await this.contactsService.findAllByUser(req.user.id, filter));
     } catch (err) {
