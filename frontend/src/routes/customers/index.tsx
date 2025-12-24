@@ -19,6 +19,7 @@ import { requireAuth } from "../../auth/requireAuth";
 import {
   useUser,
   useContacts,
+  useEventTypes,
   useCreateContact,
   useUpdateContact,
   useDeleteContact,
@@ -49,20 +50,31 @@ function CustomersRoute() {
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [dialogMode, setDialogMode] = useState<"add" | "edit">("add");
   const [pendingDelete, setPendingDelete] = useState<Customer | null>(null);
-  const [filters, setFilters] = useState({
-    hasPhone: false
+  
+  // Applied filters (used for API call)
+  const [appliedFilters, setAppliedFilters] = useState<{
+    hasPhone: boolean;
+    eventType: number | null;
+  }>({
+    hasPhone: false,
+    eventType: null,
   });
 
   const { data: user } = useUser();
+  const { data: eventTypes = [] } = useEventTypes();
+  // Fetch all contacts to check if any exist (for empty state)
+  const { data: allContacts = [], isLoading: allLoading } = useContacts(null, null);
+  // Fetch filtered contacts using applied filters
   const { data: contacts = [], isLoading: loading, error: queryError } = useContacts(
-    filters.hasPhone ? "phone" : null,
-    null
+    appliedFilters.hasPhone ? "phone" : null,
+    appliedFilters.eventType
   );
   const createContactMutation = useCreateContact();
   const updateContactMutation = useUpdateContact();
   const deleteContactMutation = useDeleteContact();
 
 
+  const allCustomers = allContacts.map(mapContactToCustomer);
   const customers = contacts.map(mapContactToCustomer);
   const error = queryError instanceof Error ? queryError.message : null;
 
@@ -96,7 +108,7 @@ function CustomersRoute() {
           }
         />
 
-        {loading ? (
+        {(loading || allLoading) ? (
           <Box sx={{ py: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <Typography color="text.secondary" variant="body2">
               Loading contacts...
@@ -108,7 +120,7 @@ function CustomersRoute() {
               {error}
             </Typography>
           </Box>
-        ) : customers.length === 0 ? (
+        ) : allCustomers.length === 0 ? (
           <Box
             sx={{
               mt: 2,
@@ -179,8 +191,11 @@ function CustomersRoute() {
         ) : (
           <CustomersList
             customers={customers}
-            filters={filters}
-            setFilters={setFilters}
+            eventTypes={eventTypes}
+            appliedFilters={appliedFilters}
+            onApplyFilters={(filters) => {
+              setAppliedFilters(filters);
+            }}
             onEdit={(customer) => {
               setDialogMode("edit");
               setEditingCustomer(customer);

@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState, Dispatch, SetStateAction } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Customer } from "./types";
+import type { EventType } from "../../lib/api";
 
 type ColumnId = "name" | "email" | "phone" | "tag";
 
@@ -12,26 +13,44 @@ const allColumns: { id: ColumnId; label: string; always?: boolean }[] = [
 
 const STORAGE_KEY = "customersTableColumns";
 
-type FiltersType = {
+type AppliedFiltersType = {
   hasPhone: boolean;
+  eventType: number | null;
 };
 
 type CustomersListProps = {
   customers: Customer[];
-  filters: FiltersType;
-  setFilters: Dispatch<SetStateAction<FiltersType>>;
+  eventTypes: EventType[];
+  appliedFilters: AppliedFiltersType;
+  onApplyFilters: (filters: AppliedFiltersType) => void;
   onEdit: (customer: Customer) => void;
   onDelete: (customer: Customer) => void;
 };
 
 
-const CustomersList = ({ customers, filters, setFilters, onEdit, onDelete }: CustomersListProps) => {
+const CustomersList = ({ customers, eventTypes, appliedFilters, onApplyFilters, onEdit, onDelete }: CustomersListProps) => {
   const [search, setSearch] = useState("");
-  const [eventFilter, setEventFilter] = useState<string>("all");
   const [filterOpen, setFilterOpen] = useState(false);
   const [columnsOpen, setColumnsOpen] = useState(false);
   const [page, setPage] = useState(1);
   const pageSize = 10;
+  
+  // Pending filters (what user is selecting, not yet applied)
+  // Initialize from appliedFilters
+  const [pendingFilters, setPendingFilters] = useState<AppliedFiltersType>(appliedFilters);
+  const [eventFilter, setEventFilter] = useState<string>(
+    appliedFilters.eventType ? String(appliedFilters.eventType) : "all"
+  );
+  
+  // Sync pending filters when filter panel opens
+  const handleFilterToggle = () => {
+    if (!filterOpen) {
+      // Opening filter panel - sync with current applied filters
+      setPendingFilters(appliedFilters);
+      setEventFilter(appliedFilters.eventType ? String(appliedFilters.eventType) : "all");
+    }
+    setFilterOpen((open) => !open);
+  };
 
   const [visibleColumns, setVisibleColumns] = useState<Record<ColumnId, boolean>>(
     () => {
@@ -40,9 +59,6 @@ const CustomersList = ({ customers, filters, setFilters, onEdit, onDelete }: Cus
         email: true,
         phone: true,
         tag: true,
-        eventType: true,
-        company: true,
-        jobTitle: true,
       };
       if (typeof window === "undefined") return base;
       try {
@@ -64,11 +80,9 @@ const CustomersList = ({ customers, filters, setFilters, onEdit, onDelete }: Cus
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(toStore));
   }, [visibleColumns]);
 
-  const eventTypes = useMemo(
-    () => Array.from(new Set(customers.map((c) => c.eventType))).sort(),
-    [customers],
-  );
+  // Use event types from props (from backend)
 
+  // Only filter by search on frontend (backend handles hasPhone and eventType)
   const filtered = useMemo(() => {
     const term = search.toLowerCase().trim();
     return customers.filter((c) => {
@@ -77,17 +91,10 @@ const CustomersList = ({ customers, filters, setFilters, onEdit, onDelete }: Cus
         c.name.toLowerCase().includes(term) ||
         c.email.toLowerCase().includes(term) ||
         c.company.toLowerCase().includes(term);
-      const matchesEvent =
-        eventFilter === "all" || c.eventType === eventFilter;
-      const matchesPhone = !filters.hasPhone || c.phone.trim().length > 0;
       
-      return (
-        matchesSearch &&
-        matchesEvent &&
-        matchesPhone
-      );
+      return matchesSearch;
     });
-  }, [customers, search, eventFilter, filters]);
+  }, [customers, search]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const currentPage = Math.min(page, totalPages);
@@ -95,9 +102,21 @@ const CustomersList = ({ customers, filters, setFilters, onEdit, onDelete }: Cus
   const currentRows = filtered.slice(startIndex, startIndex + pageSize);
 
   const clearAllFilters = () => {
-    setFilters({
-      hasPhone: false
+    setPendingFilters({
+      hasPhone: false,
+      eventType: null,
     });
+    setEventFilter("all");
+    setPage(1);
+  };
+
+  const handleApplyFilters = () => {
+    const eventTypeValue = eventFilter === "all" ? null : parseInt(eventFilter, 10);
+    onApplyFilters({
+      hasPhone: pendingFilters.hasPhone,
+      eventType: eventTypeValue || null,
+    });
+    setFilterOpen(false);
     setPage(1);
   };
 
@@ -116,26 +135,11 @@ const CustomersList = ({ customers, filters, setFilters, onEdit, onDelete }: Cus
             }}
             className="w-40 sm:w-56 rounded-md border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          <select
-            value={eventFilter}
-            onChange={(e) => {
-              setEventFilter(e.target.value);
-              setPage(1);
-            }}
-            className="rounded-md border border-gray-300 px-2 py-1 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="all">All event types</option>
-            {eventTypes.map((et) => (
-              <option key={et} value={et}>
-                {et}
-              </option>
-            ))}
-          </select>
           <div className="relative">
             <button
               type="button"
               className="rounded-full border border-gray-300 px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-1"
-              onClick={() => setFilterOpen((open) => !open)}
+              onClick={handleFilterToggle}
             >
               Filter
               <span className="text-[10px]">
@@ -152,9 +156,9 @@ const CustomersList = ({ customers, filters, setFilters, onEdit, onDelete }: Cus
                     <label className="mt-2 flex items-center gap-2 text-xs text-gray-700">
                       <input
                         type="checkbox"
-                        checked={filters.hasPhone}
+                        checked={pendingFilters.hasPhone}
                         onChange={() =>
-                          setFilters((prev) => ({
+                          setPendingFilters((prev) => ({
                             ...prev,
                             hasPhone: !prev.hasPhone,
                           }))
@@ -163,6 +167,31 @@ const CustomersList = ({ customers, filters, setFilters, onEdit, onDelete }: Cus
                       />
                       Has phone number
                     </label>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">
+                      Event type
+                    </p>
+                    <select
+                      value={eventFilter}
+                      onChange={(e) => {
+                        setEventFilter(e.target.value);
+                        // Update pending filter but don't apply yet
+                        const eventTypeValue = e.target.value === "all" ? null : parseInt(e.target.value, 10);
+                        setPendingFilters((prev) => ({
+                          ...prev,
+                          eventType: eventTypeValue || null,
+                        }));
+                      }}
+                      className="mt-2 w-full rounded-md border border-gray-300 px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="all">All event types</option>
+                      {eventTypes.map((et) => (
+                        <option key={et.id} value={et.id}>
+                          {et.title}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
                 <div className="flex items-center justify-between gap-2 border-t border-gray-200 px-4 py-3">
@@ -176,7 +205,7 @@ const CustomersList = ({ customers, filters, setFilters, onEdit, onDelete }: Cus
                   <button
                     type="button"
                     className="rounded-full bg-blue-600 px-5 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
-                    onClick={() => setFilterOpen(false)}
+                    onClick={handleApplyFilters}
                   >
                     Apply
                   </button>
