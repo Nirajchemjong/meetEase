@@ -8,6 +8,7 @@ import type { EventInfoProps } from "../meeting/EventInfo";
 import { createEvent } from "../../lib/api";
 import toast from "react-hot-toast";
 import { tzMap } from "../../constants/timezones";
+import { rules } from "../../constants/phoneNumberRules";
 
 type Props = {
   event: EventInfoProps;
@@ -22,9 +23,11 @@ const BookingForm = ({ event, selectedDate, selectedTime, onBack, eventTypeId, t
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState<string>("");
+  const [countryCode, setCountryCode] = useState("+61");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
 
   const getEndTime = () => {
     const [hourMin, meridiem] = selectedTime.split(" ");
@@ -35,8 +38,7 @@ const BookingForm = ({ event, selectedDate, selectedTime, onBack, eventTypeId, t
 
     const start = new Date(selectedDate);
     start.setHours(adjustedHours, minutes, 0, 0);
-    const end = new Date(start.getTime() + event.duration * 60 * 1000);
-    return end;
+    return new Date(start.getTime() + event.duration * 60 * 1000);
   };
 
   // Helper function to format date/time as YYYY-MM-DDTHH:mm:ss
@@ -61,9 +63,13 @@ const BookingForm = ({ event, selectedDate, selectedTime, onBack, eventTypeId, t
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!eventTypeId) {
       toast.error("Event type ID is required");
+      return;
+    }
+    
+    if (!validatePhoneNumber()) {
       return;
     }
 
@@ -72,7 +78,7 @@ const BookingForm = ({ event, selectedDate, selectedTime, onBack, eventTypeId, t
 
       // Format start time (backend will handle timezone conversion)
       const startAt = formatDateTime(selectedDate, selectedTime);
-      
+
       // Calculate end time by adding duration
       const [hourMin, meridiem] = selectedTime.split(" ");
       const [hours, minutes] = hourMin.split(":").map(Number);
@@ -95,15 +101,14 @@ const BookingForm = ({ event, selectedDate, selectedTime, onBack, eventTypeId, t
         event_type_id: eventTypeId,
         start_at: startAt,
         end_at: endAt,
-        timezone: timezone,
+        timezone,
         status: "CREATED",
-        name: name,
-        email: email,
-        phone: phone,
+        name,
+        email,
+        phone: phoneNumber ? `${countryCode}${phoneNumber}` : undefined,
         description: notes || undefined,
       });
 
-      // Calculate time range for confirmation page
       const endTime = getEndTime();
       const startTimeFormatted = selectedTime;
       const endTimeFormatted = endTime.toLocaleTimeString("default", { 
@@ -121,12 +126,13 @@ const BookingForm = ({ event, selectedDate, selectedTime, onBack, eventTypeId, t
           organizer: event.organizer,
           date: selectedDate,
           timeRange: timeRangeStr,
-          timezone: timezone,
+          timezone,
         },
       });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to schedule event";
-      toast.error(message);
+      toast.error(
+        err instanceof Error ? err.message : "Failed to schedule event"
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -134,10 +140,33 @@ const BookingForm = ({ event, selectedDate, selectedTime, onBack, eventTypeId, t
 
   const endTime = getEndTime();
 
+  const validatePhoneNumber = () => {
+    if (!phoneNumber) {
+      setPhoneError(null);
+      return true;
+    }
+
+    const rule = rules[countryCode];
+
+    if (!rule) return true;
+
+    if (phoneNumber.length < rule.min || phoneNumber.length > rule.max) {
+      setPhoneError(`Phone number must be ${rule.min} digits`);
+      return false;
+    }
+
+    if (rule.startsWith && !rule.startsWith.test(phoneNumber)) {
+      setPhoneError(rule.message || "Invalid phone number format");
+      return false;
+    }
+
+    setPhoneError(null);
+    return true;
+  };
+
   return (
     <div className="grid h-full w-full grid-cols-1 md:grid-cols-2 overflow-hidden rounded-2xl bg-white">
-      
-      {/* Left: Event Details */}
+      {/* Left */}
       <div className="border-r border-gray-200 p-6 flex flex-col justify-between">
         <div>
           <p className="text-xs font-medium text-gray-500">{event.organizer}</p>
@@ -157,8 +186,12 @@ const BookingForm = ({ event, selectedDate, selectedTime, onBack, eventTypeId, t
           </div>
 
           <p className="mt-6 text-sm text-gray-500">
-            {selectedTime} -{" "}
-            {endTime.toLocaleTimeString("default", { hour: "2-digit", minute: "2-digit" })},{" "}
+            {selectedTime} –{" "}
+            {endTime.toLocaleTimeString("default", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+            ,{" "}
             {selectedDate.toLocaleDateString("default", {
               weekday: "long",
               month: "long",
@@ -166,7 +199,10 @@ const BookingForm = ({ event, selectedDate, selectedTime, onBack, eventTypeId, t
               year: "numeric",
             })}
           </p>
-          <p className="text-sm text-gray-500">{tzMap[timezone] ? `${tzMap[timezone]} Time` : timezone}</p>
+
+          <p className="text-sm text-gray-500">
+            {tzMap[timezone] ? `${tzMap[timezone]} Time` : timezone}
+          </p>
         </div>
 
         <button
@@ -177,7 +213,7 @@ const BookingForm = ({ event, selectedDate, selectedTime, onBack, eventTypeId, t
         </button>
       </div>
 
-      {/* Right: Booking Form */}
+      {/* Right */}
       <form
         onSubmit={handleSubmit}
         className="p-6 flex flex-col justify-between overflow-y-auto"
@@ -185,13 +221,9 @@ const BookingForm = ({ event, selectedDate, selectedTime, onBack, eventTypeId, t
         <div className="space-y-4">
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1">
-                Name
-                <span className="rounded px-1.5 py-0.5 text-[10px] font-semibold text-red-600">
-                    *
-                </span>
+              Name <span className="text-red-600">*</span>
             </label>
             <input
-              type="text"
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -201,10 +233,7 @@ const BookingForm = ({ event, selectedDate, selectedTime, onBack, eventTypeId, t
 
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1">
-                Email
-                <span className="rounded px-1.5 py-0.5 text-[10px] font-semibold text-red-600">
-                    *
-                </span>
+              Email <span className="text-red-600">*</span>
             </label>
             <input
               type="email"
@@ -217,34 +246,68 @@ const BookingForm = ({ event, selectedDate, selectedTime, onBack, eventTypeId, t
 
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1">
-                Phone Number
+              Phone Number
             </label>
-            <input
-              type="text"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="Optional"
-              className="w-full rounded border border-gray-300 p-2 text-sm"
-            />
+
+            <div className="flex gap-2">
+              <select
+                value={countryCode}
+                onChange={(e) => setCountryCode(e.target.value)}
+                className="rounded border border-gray-300 p-2 text-sm bg-white"
+              >
+                <option value="+977">🇳🇵 +977</option>
+                <option value="+91">🇮🇳 +91</option>
+                <option value="+61">🇦🇺 +61</option>
+                <option value="+1">🇺🇸 +1</option>
+                <option value="+44">🇬🇧 +44</option>
+              </select>
+
+              <input
+                type="tel"
+                inputMode="numeric"
+                value={phoneNumber}
+                onChange={(e) => {
+                  let value = e.target.value.replace(/\D/g, "");
+
+                  // Auto-strip leading 0 for AU / UK
+                  if (
+                    (countryCode === "+61" || countryCode === "+44") &&
+                    value.startsWith("0")
+                  ) {
+                    value = value.slice(1);
+                  }
+
+                  setPhoneNumber(value);
+                  if (phoneError) validatePhoneNumber();
+                }}
+                placeholder="XXXXXXXXXX"
+                className={`flex-1 rounded border p-2 text-sm ${
+                  phoneError ? "border-red-500" : "border-gray-300"
+                }`}
+              />
+            </div>
           </div>
+          {phoneError && (
+            <p className="mt-1 text-xs text-red-600">{phoneError}</p>
+          )}
+
 
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1">
               Please share anything that will help prepare for our meeting
             </label>
             <textarea
+              rows={4}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               className="w-full rounded border border-gray-300 p-2 text-sm"
-              rows={4}
             />
           </div>
         </div>
 
         <button
-          type="submit"
           disabled={isSubmitting}
-          className="mt-4 w-full rounded-lg bg-blue-600 py-2 text-white font-medium hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          className="mt-4 w-full rounded-lg bg-blue-600 py-2 text-white font-medium hover:bg-blue-700 disabled:opacity-50"
         >
           {isSubmitting ? "Scheduling..." : "Schedule Event"}
         </button>
